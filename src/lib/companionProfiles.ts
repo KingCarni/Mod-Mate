@@ -98,6 +98,8 @@ export const createCompanionProfile = (input: {
   contextRules?: CompanionContextRule[];
   status?: CompanionStatus;
   id?: string;
+  createdAt?: string;
+  updatedAt?: string;
   now?: string;
 }): CompanionProfile => {
   const now = input.now ?? new Date().toISOString();
@@ -118,8 +120,8 @@ export const createCompanionProfile = (input: {
     memoryCategories: input.memoryCategories,
     allowedActions: input.allowedActions,
     contextRules: input.contextRules ?? [],
-    createdAt: now,
-    updatedAt: now,
+    createdAt: input.createdAt ?? now,
+    updatedAt: input.updatedAt ?? now,
   };
 };
 
@@ -181,5 +183,16 @@ export const validateCompanionProfile = (value: unknown): CompanionProfileValida
   return { ok: true, profile: candidate as CompanionProfile };
 };
 
+export const parseCompanionProfileJson = (json: string): CompanionProfileValidationResult => {
+  try {
+    return validateCompanionProfile(JSON.parse(json));
+  } catch {
+    return { ok: false, errors: ["Imported file is not valid JSON."] };
+  }
+};
+
 export const stringifyCompanionProfile = (profile: CompanionProfile): string =>
   JSON.stringify(profile, null, 2);
+
+export const getCompanionProfileFileName = (profile: CompanionProfile): string =>
+  `${createSlugId(profile.name)}-mod-mate-profile.json`;
