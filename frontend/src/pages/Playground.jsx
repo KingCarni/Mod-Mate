@@ -83,28 +83,28 @@ const Playground = () => {
           <div className="surface-card flex flex-col h-[72vh] min-h-[520px]">
             {/* Companion picker */}
             <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                data-testid="playground-companion-picker"
-                className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-muted"
-              >
-                <span className="h-9 w-9 rounded-xl bg-accent-ochre/25 text-[#7B5A1F] flex items-center justify-center font-heading text-sm font-medium">
-                  {selected.initials}
-                </span>
-                <span className="text-left">
-                  <span className="block text-sm font-medium leading-tight">{selected.name}</span>
-                  <span className="block text-xs text-muted-foreground">{selected.category}</span>
-                </span>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </button>
-              <Badge tone="sage" data-testid="playground-status">{selected.status}</Badge>
-
-              {open && (
-                <div
-                  className="absolute z-20 mt-44 ml-1 w-72 rounded-2xl border border-border bg-white shadow-lift p-1.5"
-                  data-testid="companion-dropdown"
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpen((v) => !v)}
+                  data-testid="playground-companion-picker"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-muted"
                 >
+                  <span className="h-9 w-9 rounded-xl bg-accent-ochre/25 text-[#7B5A1F] flex items-center justify-center font-heading text-sm font-medium">
+                    {selected.initials}
+                  </span>
+                  <span className="text-left">
+                    <span className="block text-sm font-medium leading-tight">{selected.name}</span>
+                    <span className="block text-xs text-muted-foreground">{selected.category}</span>
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </button>
+
+                {open && (
+                  <div
+                    className="absolute z-20 top-full left-0 mt-2 w-72 rounded-2xl border border-border bg-white shadow-lift p-1.5"
+                    data-testid="companion-dropdown"
+                  >
                   {companions.map((c) => (
                     <button
                       key={c.id}
@@ -130,6 +130,8 @@ const Playground = () => {
                   ))}
                 </div>
               )}
+              </div>
+              <Badge tone="sage" data-testid="playground-status">{selected.status}</Badge>
             </div>
 
             {/* Messages */}
