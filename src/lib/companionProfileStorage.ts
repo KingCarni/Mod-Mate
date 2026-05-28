@@ -8,24 +8,20 @@ import type {
 } from "@/types/companionProfile";
 
 export const COMPANION_PROFILE_STORAGE_KEY = "mod-mate.builder.profile.v1";
+export const COMPANION_PROFILE_LAUNCH_KEY = "mod-mate.playground.launchProfile.v1";
 
 export type StoredCompanionProfileResult =
   | { ok: true; profile: CompanionProfile }
   | { ok: false; errors: string[] }
   | { ok: null; errors: [] };
 
-const hasBrowserStorage = () =>
+const hasLocalStorage = () =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
-export const saveCompanionProfileDraft = (profile: CompanionProfile): void => {
-  if (!hasBrowserStorage()) return;
-  window.localStorage.setItem(COMPANION_PROFILE_STORAGE_KEY, stringifyCompanionProfile(profile));
-};
+const hasSessionStorage = () =>
+  typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
-export const loadCompanionProfileDraft = (): StoredCompanionProfileResult => {
-  if (!hasBrowserStorage()) return { ok: null, errors: [] };
-
-  const rawProfile = window.localStorage.getItem(COMPANION_PROFILE_STORAGE_KEY);
+const parseStoredProfile = (rawProfile: string | null): StoredCompanionProfileResult => {
   if (!rawProfile) return { ok: null, errors: [] };
 
   const result: CompanionProfileValidationResult = parseCompanionProfileJson(rawProfile);
@@ -36,7 +32,32 @@ export const loadCompanionProfileDraft = (): StoredCompanionProfileResult => {
   return { ok: true, profile: result.profile };
 };
 
+export const saveCompanionProfileDraft = (profile: CompanionProfile): void => {
+  if (!hasLocalStorage()) return;
+  window.localStorage.setItem(COMPANION_PROFILE_STORAGE_KEY, stringifyCompanionProfile(profile));
+};
+
+export const loadCompanionProfileDraft = (): StoredCompanionProfileResult => {
+  if (!hasLocalStorage()) return { ok: null, errors: [] };
+  return parseStoredProfile(window.localStorage.getItem(COMPANION_PROFILE_STORAGE_KEY));
+};
+
 export const clearCompanionProfileDraft = (): void => {
-  if (!hasBrowserStorage()) return;
+  if (!hasLocalStorage()) return;
   window.localStorage.removeItem(COMPANION_PROFILE_STORAGE_KEY);
+};
+
+export const saveCompanionProfileLaunch = (profile: CompanionProfile): void => {
+  if (!hasSessionStorage()) return;
+  window.sessionStorage.setItem(COMPANION_PROFILE_LAUNCH_KEY, stringifyCompanionProfile(profile));
+};
+
+export const loadCompanionProfileLaunch = (): StoredCompanionProfileResult => {
+  if (!hasSessionStorage()) return { ok: null, errors: [] };
+  return parseStoredProfile(window.sessionStorage.getItem(COMPANION_PROFILE_LAUNCH_KEY));
+};
+
+export const clearCompanionProfileLaunch = (): void => {
+  if (!hasSessionStorage()) return;
+  window.sessionStorage.removeItem(COMPANION_PROFILE_LAUNCH_KEY);
 };
