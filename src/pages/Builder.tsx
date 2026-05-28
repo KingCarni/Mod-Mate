@@ -233,6 +233,45 @@ const Builder = () => {
           </div>
         </div>
 
+        {importState.type !== "idle" && (
+          <div
+            role="status"
+            aria-live="polite"
+            data-testid="builder-action-alert"
+            className={`rounded-2xl border px-5 py-4 shadow-sm flex items-start gap-3 ${
+              importState.type === "error"
+                ? "border-secondary/40 bg-secondary/10 text-foreground"
+                : "border-accent-sage/50 bg-accent-sage/15 text-foreground"
+            }`}
+          >
+            {importState.type === "error" ? (
+              <AlertCircle className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 text-accent-sage shrink-0 mt-0.5" />
+            )}
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">
+                {importState.type === "error" ? "Import/export needs attention" : "Profile action complete"}
+              </p>
+              <p className="text-sm text-muted-foreground">{importState.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setImportState({
+                  type: "idle",
+                  message: "Export or import portable companion profiles as JSON.",
+                })
+              }
+              className="ml-auto rounded-full p-1 text-muted-foreground hover:bg-white/70 hover:text-foreground"
+              aria-label="Dismiss message"
+              data-testid="builder-action-alert-dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <SectionCard eyebrow="01" title="Companion basics" testId="builder-basics">
@@ -435,21 +474,6 @@ const Builder = () => {
                   Exported profiles are portable JSON. Imported files are validated before they update the builder.
                 </p>
               </div>
-            </div>
-            <div
-              className={`surface-card p-4 flex items-start gap-3 ${
-                importState.type === "error" ? "border-secondary/40" : importState.type === "success" ? "border-accent-sage/60" : ""
-              }`}
-              data-testid="builder-import-status"
-            >
-              {importState.type === "error" ? (
-                <AlertCircle className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-              ) : importState.type === "success" ? (
-                <CheckCircle2 className="h-5 w-5 text-accent-sage shrink-0 mt-0.5" />
-              ) : (
-                <Download className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-              )}
-              <p className="text-xs text-muted-foreground">{importState.message}</p>
             </div>
             <Link
               to="/playground"
