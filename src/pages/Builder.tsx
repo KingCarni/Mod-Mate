@@ -1,20 +1,26 @@
 "use client";
 
-import React, { type ReactNode, useMemo, useState } from "react";
+import React, { type ChangeEvent, type ReactNode, useMemo, useRef, useState } from "react";
 import { Link } from "@/components/compat/Router";
 import {
-  Save,
-  FlaskConical,
-  X,
-  Plus,
-  Sparkles,
+  AlertCircle,
+  CheckCircle2,
   ChevronDown,
+  Download,
+  FlaskConical,
+  Plus,
+  Save,
+  Sparkles,
+  Upload,
+  X,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import SectionCard from "@/components/mate/SectionCard";
-import { builderRules, memoryCategories, allowedActions } from "@/data/mockData";
+import { allowedActions, builderRules, memoryCategories } from "@/data/mockData";
 import {
   createCompanionProfile,
+  getCompanionProfileFileName,
+  parseCompanionProfileJson,
   stringifyCompanionProfile,
   validateCompanionProfile,
 } from "@/lib/companionProfiles";
@@ -25,6 +31,7 @@ import {
   type CompanionAction,
   type CompanionCategory,
   type CompanionMemoryCategory,
+  type CompanionProfile,
   type CompanionResponseStyle,
   type CompanionTone,
 } from "@/types/companionProfile";
@@ -50,7 +57,13 @@ const toAllowedActions = (): CompanionAction[] =>
     enabled: action.enabled,
   }));
 
+type ImportState =
+  | { type: "idle"; message: string }
+  | { type: "success"; message: string }
+  | { type: "error"; message: string };
+
 const Builder = () => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState("DraftMate");
   const [description, setDescription] = useState(
     "Screenplay & story companion. Tracks beats, characters, and tone across drafts.",
@@ -63,6 +76,10 @@ const Builder = () => {
   const [newRule, setNewRule] = useState("");
   const [memory, setMemory] = useState<CompanionMemoryCategory[]>(toMemoryCategories);
   const [actions, setActions] = useState<CompanionAction[]>(toAllowedActions);
+  const [importState, setImportState] = useState<ImportState>({
+    type: "idle",
+    message: "Export or import portable companion profiles as JSON.",
+  });
 
   const profile = useMemo(
     () =>
@@ -90,6 +107,76 @@ const Builder = () => {
     setNewRule("");
   };
 
+  const applyImportedProfile = (importedProfile: CompanionProfile) => {
+    setName(importedProfile.name);
+    setDescription(importedProfile.description);
+    setCategory(importedProfile.category);
+    setRole(importedProfile.persona.role);
+    setTone(importedProfile.persona.tone);
+    setStyle(importedProfile.persona.responseStyle);
+    setRules(importedProfile.systemRules);
+    setMemory(importedProfile.memoryCategories);
+    setActions(importedProfile.allowedActions);
+  };
+
+  const exportProfile = () => {
+    if (!validation.ok) {
+      setImportState({
+        type: "error",
+        message: `Profile cannot export yet: ${validation.errors[0]}`,
+      });
+      return;
+    }
+
+    const blob = new Blob([stringifyCompanionProfile(profile)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = getCompanionProfileFileName(profile);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    setImportState({
+      type: "success",
+      message: `Exported ${getCompanionProfileFileName(profile)}.`,
+    });
+  };
+
+  const importProfile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    try {
+      const json = await file.text();
+      const result = parseCompanionProfileJson(json);
+
+      if (!result.ok) {
+        setImportState({
+          type: "error",
+          message: `Import failed: ${result.errors.slice(0, 3).join(" ")}`,
+        });
+        return;
+      }
+
+      applyImportedProfile(result.profile);
+      setImportState({
+        type: "success",
+        message: `Imported ${result.profile.name} from ${file.name}.`,
+      });
+    } catch {
+      setImportState({
+        type: "error",
+        message: "Import failed: unable to read the selected file.",
+      });
+    }
+  };
+
   return (
     <AppShell>
       <div data-testid="builder-page" className="space-y-8">
@@ -104,7 +191,31 @@ const Builder = () => {
               this is a UI preview backed by the real profile schema.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={importProfile}
+              className="hidden"
+              data-testid="builder-import-input"
+            />
+            <button
+              type="button"
+              data-testid="builder-import"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Upload className="h-4 w-4" /> Import JSON
+            </button>
+            <button
+              type="button"
+              data-testid="builder-export"
+              onClick={exportProfile}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Download className="h-4 w-4" /> Export JSON
+            </button>
             <button
               type="button"
               data-testid="builder-save"
@@ -142,7 +253,7 @@ const Builder = () => {
                   <Field label="Name">
                     <input
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(event) => setName(event.target.value)}
                       data-testid="builder-name"
                       className="mt-2 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
@@ -159,7 +270,7 @@ const Builder = () => {
                     <Field label="Description">
                       <textarea
                         value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                        onChange={(event) => setDescription(event.target.value)}
                         rows={3}
                         data-testid="builder-description"
                         className="mt-2 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -175,7 +286,7 @@ const Builder = () => {
                 <Field label="Role">
                   <input
                     value={role}
-                    onChange={(e) => setRole(e.target.value)}
+                    onChange={(event) => setRole(event.target.value)}
                     data-testid="builder-role"
                     className="mt-2 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
@@ -222,8 +333,8 @@ const Builder = () => {
               <div className="flex gap-2">
                 <input
                   value={newRule}
-                  onChange={(e) => setNewRule(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addRule()}
+                  onChange={(event) => setNewRule(event.target.value)}
+                  onKeyDown={(event) => event.key === "Enter" && addRule()}
                   placeholder="Add a guardrail and press Enter"
                   data-testid="builder-new-rule"
                   className="flex-1 rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -321,9 +432,24 @@ const Builder = () => {
                   {validation.ok ? "Profile matches schema v1.0.0" : "Profile needs attention"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  This pass defines the portable profile shape only. Save, import/export, and publish flows come next.
+                  Exported profiles are portable JSON. Imported files are validated before they update the builder.
                 </p>
               </div>
+            </div>
+            <div
+              className={`surface-card p-4 flex items-start gap-3 ${
+                importState.type === "error" ? "border-secondary/40" : importState.type === "success" ? "border-accent-sage/60" : ""
+              }`}
+              data-testid="builder-import-status"
+            >
+              {importState.type === "error" ? (
+                <AlertCircle className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
+              ) : importState.type === "success" ? (
+                <CheckCircle2 className="h-5 w-5 text-accent-sage shrink-0 mt-0.5" />
+              ) : (
+                <Download className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              )}
+              <p className="text-xs text-muted-foreground">{importState.message}</p>
             </div>
             <Link
               to="/playground"
