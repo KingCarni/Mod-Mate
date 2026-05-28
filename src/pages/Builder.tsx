@@ -1,6 +1,13 @@
 "use client";
 
-import React, { type ChangeEvent, type ReactNode, useMemo, useRef, useState } from "react";
+import React, {
+  type ChangeEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "@/components/compat/Router";
 import {
   AlertCircle,
@@ -9,8 +16,10 @@ import {
   Download,
   FlaskConical,
   Plus,
+  RotateCcw,
   Save,
   Sparkles,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
@@ -24,6 +33,11 @@ import {
   stringifyCompanionProfile,
   validateCompanionProfile,
 } from "@/lib/companionProfiles";
+import {
+  clearCompanionProfileDraft,
+  loadCompanionProfileDraft,
+  saveCompanionProfileDraft,
+} from "@/lib/companionProfileStorage";
 import {
   companionCategories,
   companionResponseStyles,
@@ -41,6 +55,14 @@ const DEFAULT_CONTEXT_RULES = [
   { id: "memory-sections", label: "Use enabled memory categories only", required: true },
   { id: "missing-context", label: "Ask before guessing when context is missing", required: true },
 ];
+
+const DEFAULT_NAME = "DraftMate";
+const DEFAULT_DESCRIPTION =
+  "Screenplay & story companion. Tracks beats, characters, and tone across drafts.";
+const DEFAULT_CATEGORY: CompanionCategory = "Creative Writing";
+const DEFAULT_ROLE = "Co-writer and continuity guardian";
+const DEFAULT_TONE: CompanionTone = "Editorial";
+const DEFAULT_STYLE: CompanionResponseStyle = "Concise";
 
 const toMemoryCategories = (): CompanionMemoryCategory[] =>
   memoryCategories.map((category) => ({
@@ -62,24 +84,27 @@ type ImportState =
   | { type: "success"; message: string }
   | { type: "error"; message: string };
 
+const idleMessage: ImportState = {
+  type: "idle",
+  message: "Export or import portable companion profiles as JSON.",
+};
+
 const Builder = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [name, setName] = useState("DraftMate");
-  const [description, setDescription] = useState(
-    "Screenplay & story companion. Tracks beats, characters, and tone across drafts.",
-  );
-  const [category, setCategory] = useState<CompanionCategory>("Creative Writing");
-  const [role, setRole] = useState("Co-writer and continuity guardian");
-  const [tone, setTone] = useState<CompanionTone>("Editorial");
-  const [style, setStyle] = useState<CompanionResponseStyle>("Concise");
+  const [name, setName] = useState(DEFAULT_NAME);
+  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
+  const [category, setCategory] = useState<CompanionCategory>(DEFAULT_CATEGORY);
+  const [role, setRole] = useState(DEFAULT_ROLE);
+  const [tone, setTone] = useState<CompanionTone>(DEFAULT_TONE);
+  const [style, setStyle] = useState<CompanionResponseStyle>(DEFAULT_STYLE);
   const [rules, setRules] = useState<string[]>(builderRules);
   const [newRule, setNewRule] = useState("");
   const [memory, setMemory] = useState<CompanionMemoryCategory[]>(toMemoryCategories);
   const [actions, setActions] = useState<CompanionAction[]>(toAllowedActions);
-  const [importState, setImportState] = useState<ImportState>({
-    type: "idle",
-    message: "Export or import portable companion profiles as JSON.",
-  });
+  const [importState, setImportState] = useState<ImportState>(idleMessage);
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const profile = useMemo(
     () =>
@@ -99,7 +124,46 @@ const Builder = () => {
     [actions, category, description, memory, name, role, rules, style, tone],
   );
 
+  const profileJson = stringifyCompanionProfile(profile);
   const validation = validateCompanionProfile(profile);
+  const hasUnsavedChanges = hydrated && savedSnapshot !== profileJson;
+
+  const applyProfileToBuilder = (nextProfile: CompanionProfile) => {
+    setName(nextProfile.name);
+    setDescription(nextProfile.description);
+    setCategory(nextProfile.category);
+    setRole(nextProfile.persona.role);
+    setTone(nextProfile.persona.tone);
+    setStyle(nextProfile.persona.responseStyle);
+    setRules(nextProfile.systemRules);
+    setMemory(nextProfile.memoryCategories);
+    setActions(nextProfile.allowedActions);
+  };
+
+  useEffect(() => {
+    const stored = loadCompanionProfileDraft();
+
+    if (stored.ok === true) {
+      applyProfileToBuilder(stored.profile);
+      setSavedSnapshot(stringifyCompanionProfile(stored.profile));
+      setLastSavedAt(stored.profile.updatedAt);
+      setImportState({
+        type: "success",
+        message: `Loaded local draft for ${stored.profile.name}.`,
+      });
+    } else if (stored.ok === false) {
+      setImportState({
+        type: "error",
+        message: `Local draft could not load: ${stored.errors.slice(0, 2).join(" ")}`,
+      });
+      setSavedSnapshot(profileJson);
+    } else {
+      setSavedSnapshot(profileJson);
+    }
+
+    setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addRule = () => {
     if (!newRule.trim()) return;
@@ -107,16 +171,67 @@ const Builder = () => {
     setNewRule("");
   };
 
-  const applyImportedProfile = (importedProfile: CompanionProfile) => {
-    setName(importedProfile.name);
-    setDescription(importedProfile.description);
-    setCategory(importedProfile.category);
-    setRole(importedProfile.persona.role);
-    setTone(importedProfile.persona.tone);
-    setStyle(importedProfile.persona.responseStyle);
-    setRules(importedProfile.systemRules);
-    setMemory(importedProfile.memoryCategories);
-    setActions(importedProfile.allowedActions);
+  const saveDraft = () => {
+    if (!validation.ok) {
+      setImportState({
+        type: "error",
+        message: `Draft cannot save yet: ${validation.errors[0]}`,
+      });
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const profileToSave = createCompanionProfile({
+      name,
+      description,
+      category,
+      role,
+      tone,
+      responseStyle: style,
+      systemRules: rules,
+      memoryCategories: memory,
+      allowedActions: actions,
+      contextRules: DEFAULT_CONTEXT_RULES,
+      id: profile.id,
+      createdAt: profile.createdAt,
+      updatedAt: now,
+      now,
+    });
+    const nextSnapshot = stringifyCompanionProfile(profileToSave);
+
+    saveCompanionProfileDraft(profileToSave);
+    setSavedSnapshot(nextSnapshot);
+    setLastSavedAt(now);
+    setImportState({
+      type: "success",
+      message: `Saved local draft for ${profileToSave.name}.`,
+    });
+  };
+
+  const resetToDefault = () => {
+    setName(DEFAULT_NAME);
+    setDescription(DEFAULT_DESCRIPTION);
+    setCategory(DEFAULT_CATEGORY);
+    setRole(DEFAULT_ROLE);
+    setTone(DEFAULT_TONE);
+    setStyle(DEFAULT_STYLE);
+    setRules(builderRules);
+    setMemory(toMemoryCategories());
+    setActions(toAllowedActions());
+    setImportState({
+      type: "success",
+      message: "Builder reset to the default starter companion. Save draft to keep it.",
+    });
+  };
+
+  const clearLocalDraft = () => {
+    clearCompanionProfileDraft();
+    setSavedSnapshot(profileJson);
+    setLastSavedAt(null);
+    setImportState({
+      type: "success",
+      message: "Local draft cleared. The current on-screen profile was not changed.",
+    });
   };
 
   const exportProfile = () => {
@@ -128,7 +243,7 @@ const Builder = () => {
       return;
     }
 
-    const blob = new Blob([stringifyCompanionProfile(profile)], {
+    const blob = new Blob([profileJson], {
       type: "application/json;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
@@ -164,10 +279,10 @@ const Builder = () => {
         return;
       }
 
-      applyImportedProfile(result.profile);
+      applyProfileToBuilder(result.profile);
       setImportState({
         type: "success",
-        message: `Imported ${result.profile.name} from ${file.name}.`,
+        message: `Imported ${result.profile.name} from ${file.name}. Save draft to keep it locally.`,
       });
     } catch {
       setImportState({
@@ -187,9 +302,22 @@ const Builder = () => {
               Shape how your companion thinks, remembers, and acts.
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-              Configure persona, guardrails, memory, and allowed actions. Nothing here saves yet —
-              this is a UI preview backed by the real profile schema.
+              Configure persona, guardrails, memory, and allowed actions. Drafts save locally for now —
+              no backend, auth, or database yet.
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span
+                data-testid="builder-save-status"
+                className={`rounded-full border px-3 py-1 ${
+                  hasUnsavedChanges
+                    ? "border-secondary/40 bg-secondary/10 text-foreground"
+                    : "border-accent-sage/40 bg-accent-sage/10 text-foreground"
+                }`}
+              >
+                {hasUnsavedChanges ? "Unsaved local changes" : "Local draft up to date"}
+              </span>
+              {lastSavedAt && <span>Last saved {new Date(lastSavedAt).toLocaleString()}</span>}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -218,7 +346,24 @@ const Builder = () => {
             </button>
             <button
               type="button"
+              data-testid="builder-reset-default"
+              onClick={resetToDefault}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <RotateCcw className="h-4 w-4" /> Reset
+            </button>
+            <button
+              type="button"
+              data-testid="builder-clear-local"
+              onClick={clearLocalDraft}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Trash2 className="h-4 w-4" /> Clear local
+            </button>
+            <button
+              type="button"
               data-testid="builder-save"
+              onClick={saveDraft}
               className="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
             >
               <Save className="h-4 w-4" /> Save draft
@@ -251,18 +396,13 @@ const Builder = () => {
             )}
             <div className="space-y-1">
               <p className="text-sm font-semibold">
-                {importState.type === "error" ? "Import/export needs attention" : "Profile action complete"}
+                {importState.type === "error" ? "Builder needs attention" : "Builder action complete"}
               </p>
               <p className="text-sm text-muted-foreground">{importState.message}</p>
             </div>
             <button
               type="button"
-              onClick={() =>
-                setImportState({
-                  type: "idle",
-                  message: "Export or import portable companion profiles as JSON.",
-                })
-              }
+              onClick={() => setImportState(idleMessage)}
               className="ml-auto rounded-full p-1 text-muted-foreground hover:bg-white/70 hover:text-foreground"
               aria-label="Dismiss message"
               data-testid="builder-action-alert-dismiss"
@@ -460,7 +600,7 @@ const Builder = () => {
             <SectionCard eyebrow="Preview" title="Profile JSON" testId="builder-json">
               <div className="rounded-xl bg-primary text-primary-foreground p-4 max-h-[420px] overflow-auto">
                 <pre className="text-xs leading-relaxed mono whitespace-pre-wrap" data-testid="builder-json-pre">
-                  {stringifyCompanionProfile(profile)}
+                  {profileJson}
                 </pre>
               </div>
             </SectionCard>
@@ -471,7 +611,7 @@ const Builder = () => {
                   {validation.ok ? "Profile matches schema v1.0.0" : "Profile needs attention"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Exported profiles are portable JSON. Imported files are validated before they update the builder.
+                  Drafts save to this browser only. Export JSON to move a companion between devices or projects.
                 </p>
               </div>
             </div>
