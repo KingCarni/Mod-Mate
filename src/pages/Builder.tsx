@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { type ReactNode, useMemo, useState } from "react";
 import { Link } from "@/components/compat/Router";
 import {
   Save,
@@ -12,45 +12,77 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import SectionCard from "@/components/mate/SectionCard";
-import Badge from "@/components/mate/Badge";
 import { builderRules, memoryCategories, allowedActions } from "@/data/mockData";
+import {
+  createCompanionProfile,
+  stringifyCompanionProfile,
+  validateCompanionProfile,
+} from "@/lib/companionProfiles";
+import {
+  companionCategories,
+  companionResponseStyles,
+  companionTones,
+  type CompanionAction,
+  type CompanionCategory,
+  type CompanionMemoryCategory,
+  type CompanionResponseStyle,
+  type CompanionTone,
+} from "@/types/companionProfile";
 
-const CATEGORIES = [
-  "Creative Writing",
-  "QA & Product",
-  "Game Design",
-  "Tabletop RPG",
-  "Support & Onboarding",
-  "Character & Roleplay",
-  "Business Workflow",
+const DEFAULT_CONTEXT_RULES = [
+  { id: "current-screen", label: "Use current screen context first", required: true },
+  { id: "memory-sections", label: "Use enabled memory categories only", required: true },
+  { id: "missing-context", label: "Ask before guessing when context is missing", required: true },
 ];
 
-const TONE_OPTIONS = ["Warm", "Direct", "Playful", "Editorial", "Cinematic"];
-const STYLE_OPTIONS = ["Concise", "Detailed", "Bullet-first", "Conversational"];
+const toMemoryCategories = (): CompanionMemoryCategory[] =>
+  memoryCategories.map((category) => ({
+    id: category.id,
+    label: category.label,
+    color: category.color as CompanionMemoryCategory["color"],
+    enabled: true,
+  }));
+
+const toAllowedActions = (): CompanionAction[] =>
+  allowedActions.map((action) => ({
+    id: action.id,
+    label: action.label,
+    enabled: action.enabled,
+  }));
 
 const Builder = () => {
   const [name, setName] = useState("DraftMate");
   const [description, setDescription] = useState(
     "Screenplay & story companion. Tracks beats, characters, and tone across drafts.",
   );
-  const [category, setCategory] = useState("Creative Writing");
+  const [category, setCategory] = useState<CompanionCategory>("Creative Writing");
   const [role, setRole] = useState("Co-writer and continuity guardian");
-  const [tone, setTone] = useState("Editorial");
-  const [style, setStyle] = useState("Concise");
-  const [rules, setRules] = useState(builderRules);
+  const [tone, setTone] = useState<CompanionTone>("Editorial");
+  const [style, setStyle] = useState<CompanionResponseStyle>("Concise");
+  const [rules, setRules] = useState<string[]>(builderRules);
   const [newRule, setNewRule] = useState("");
-  const [memory, setMemory] = useState(memoryCategories);
-  const [actions, setActions] = useState(allowedActions);
+  const [memory, setMemory] = useState<CompanionMemoryCategory[]>(toMemoryCategories);
+  const [actions, setActions] = useState<CompanionAction[]>(toAllowedActions);
 
-  const profile = {
-    name,
-    description,
-    category,
-    persona: { role, tone, response_style: style },
-    rules,
-    memory_categories: memory.map((m) => m.label),
-    allowed_actions: actions.filter((a) => a.enabled).map((a) => a.id),
-  };
+  const profile = useMemo(
+    () =>
+      createCompanionProfile({
+        name,
+        description,
+        category,
+        role,
+        tone,
+        responseStyle: style,
+        systemRules: rules,
+        memoryCategories: memory,
+        allowedActions: actions,
+        contextRules: DEFAULT_CONTEXT_RULES,
+        now: "2026-01-01T00:00:00.000Z",
+      }),
+    [actions, category, description, memory, name, role, rules, style, tone],
+  );
+
+  const validation = validateCompanionProfile(profile);
 
   const addRule = () => {
     if (!newRule.trim()) return;
@@ -61,7 +93,6 @@ const Builder = () => {
   return (
     <AppShell>
       <div data-testid="builder-page" className="space-y-8">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <p className="eyebrow">Companion builder</p>
@@ -70,7 +101,7 @@ const Builder = () => {
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
               Configure persona, guardrails, memory, and allowed actions. Nothing here saves yet —
-              this is a UI preview.
+              this is a UI preview backed by the real profile schema.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -93,7 +124,6 @@ const Builder = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Basics */}
             <SectionCard eyebrow="01" title="Companion basics" testId="builder-basics">
               <div className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-5 items-start">
                 <div className="flex flex-col items-center gap-2">
@@ -120,8 +150,8 @@ const Builder = () => {
                   <Field label="Category">
                     <SelectInput
                       value={category}
-                      onChange={setCategory}
-                      options={CATEGORIES}
+                      onChange={(value) => setCategory(value as CompanionCategory)}
+                      options={[...companionCategories]}
                       testId="builder-category"
                     />
                   </Field>
@@ -140,7 +170,6 @@ const Builder = () => {
               </div>
             </SectionCard>
 
-            {/* Persona */}
             <SectionCard eyebrow="02" title="Persona" description="How it speaks, what it does, and how it shows up." testId="builder-persona">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Field label="Role">
@@ -152,28 +181,37 @@ const Builder = () => {
                   />
                 </Field>
                 <Field label="Tone">
-                  <SelectInput value={tone} onChange={setTone} options={TONE_OPTIONS} testId="builder-tone" />
+                  <SelectInput
+                    value={tone}
+                    onChange={(value) => setTone(value as CompanionTone)}
+                    options={[...companionTones]}
+                    testId="builder-tone"
+                  />
                 </Field>
                 <Field label="Response style">
-                  <SelectInput value={style} onChange={setStyle} options={STYLE_OPTIONS} testId="builder-style" />
+                  <SelectInput
+                    value={style}
+                    onChange={(value) => setStyle(value as CompanionResponseStyle)}
+                    options={[...companionResponseStyles]}
+                    testId="builder-style"
+                  />
                 </Field>
               </div>
             </SectionCard>
 
-            {/* Rules */}
             <SectionCard eyebrow="03" title="Rules & guardrails" description="The companion must never break these." testId="builder-rules">
               <div className="flex flex-wrap gap-2 mb-4" data-testid="rules-list">
-                {rules.map((r, idx) => (
+                {rules.map((rule, index) => (
                   <span
-                    key={idx}
-                    data-testid={`rule-${idx}`}
+                    key={`${rule}-${index}`}
+                    data-testid={`rule-${index}`}
                     className="group inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs"
                   >
-                    {r}
+                    {rule}
                     <button
                       type="button"
-                      onClick={() => setRules(rules.filter((_, i) => i !== idx))}
-                      data-testid={`rule-${idx}-remove`}
+                      onClick={() => setRules(rules.filter((_, ruleIndex) => ruleIndex !== index))}
+                      data-testid={`rule-${index}-remove`}
                       className="opacity-50 hover:opacity-100"
                     >
                       <X className="h-3 w-3" />
@@ -201,28 +239,26 @@ const Builder = () => {
               </div>
             </SectionCard>
 
-            {/* Memory */}
             <SectionCard eyebrow="04" title="Memory categories" description="What the companion is allowed to remember across sessions." testId="builder-memory">
               <div className="flex flex-wrap gap-2">
-                {memory.map((m) => (
+                {memory.map((categoryItem) => (
                   <button
-                    key={m.id}
+                    key={categoryItem.id}
                     type="button"
-                    data-testid={`memory-${m.id}`}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-border bg-white px-4 py-2 text-sm hover:bg-muted"
+                    onClick={() =>
+                      setMemory(
+                        memory.map((item) =>
+                          item.id === categoryItem.id ? { ...item, enabled: !item.enabled } : item,
+                        ),
+                      )
+                    }
+                    data-testid={`memory-${categoryItem.id}`}
+                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm hover:bg-muted ${
+                      categoryItem.enabled ? "border-border bg-white" : "border-dashed border-border bg-muted/30 text-muted-foreground"
+                    }`}
                   >
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        m.color === "sage"
-                          ? "bg-accent-sage"
-                          : m.color === "ochre"
-                            ? "bg-accent-ochre"
-                            : m.color === "terracotta"
-                              ? "bg-secondary"
-                              : "bg-primary"
-                      }`}
-                    />
-                    {m.label}
+                    <span className={`h-2 w-2 rounded-full ${getAccentClass(categoryItem.color)}`} />
+                    {categoryItem.label}
                   </button>
                 ))}
                 <button
@@ -235,31 +271,32 @@ const Builder = () => {
               </div>
             </SectionCard>
 
-            {/* Allowed actions */}
             <SectionCard eyebrow="05" title="Allowed actions" description="Toggle the things this companion is permitted to do." testId="builder-actions">
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {actions.map((a) => (
+                {actions.map((action) => (
                   <li
-                    key={a.id}
+                    key={action.id}
                     className="flex items-center justify-between rounded-xl border border-border bg-white px-4 py-3"
-                    data-testid={`action-${a.id}`}
+                    data-testid={`action-${action.id}`}
                   >
-                    <span className="text-sm">{a.label}</span>
+                    <span className="text-sm">{action.label}</span>
                     <button
                       type="button"
                       onClick={() =>
                         setActions(
-                          actions.map((x) => (x.id === a.id ? { ...x, enabled: !x.enabled } : x)),
+                          actions.map((item) =>
+                            item.id === action.id ? { ...item, enabled: !item.enabled } : item,
+                          ),
                         )
                       }
-                      data-testid={`action-${a.id}-toggle`}
+                      data-testid={`action-${action.id}-toggle`}
                       className={`relative h-6 w-11 rounded-full transition-colors ${
-                        a.enabled ? "bg-primary" : "bg-border"
+                        action.enabled ? "bg-primary" : "bg-border"
                       }`}
                     >
                       <span
                         className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                          a.enabled ? "translate-x-5" : "translate-x-0.5"
+                          action.enabled ? "translate-x-5" : "translate-x-0.5"
                         }`}
                       />
                     </button>
@@ -269,21 +306,24 @@ const Builder = () => {
             </SectionCard>
           </div>
 
-          {/* Preview */}
           <aside className="lg:sticky lg:top-24 self-start space-y-5" data-testid="builder-preview">
             <SectionCard eyebrow="Preview" title="Profile JSON" testId="builder-json">
               <div className="rounded-xl bg-primary text-primary-foreground p-4 max-h-[420px] overflow-auto">
                 <pre className="text-xs leading-relaxed mono whitespace-pre-wrap" data-testid="builder-json-pre">
-                  {JSON.stringify(profile, null, 2)}
+                  {stringifyCompanionProfile(profile)}
                 </pre>
               </div>
             </SectionCard>
-            <div className="surface-card p-5 flex items-center gap-3" data-testid="builder-meta">
-              <Sparkles className="h-5 w-5 text-secondary" />
-              <p className="text-xs text-muted-foreground">
-                Tip: each change is mock-state only. Wiring (save / version / publish) comes in the
-                next pass.
-              </p>
+            <div className="surface-card p-5 flex items-start gap-3" data-testid="builder-meta">
+              <Sparkles className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-xs font-medium">
+                  {validation.ok ? "Profile matches schema v1.0.0" : "Profile needs attention"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  This pass defines the portable profile shape only. Save, import/export, and publish flows come next.
+                </p>
+              </div>
             </div>
             <Link
               to="/playground"
@@ -299,24 +339,43 @@ const Builder = () => {
   );
 };
 
-const Field = ({ label, children }) => (
+const getAccentClass = (accent: CompanionMemoryCategory["color"]) => {
+  if (accent === "sage") return "bg-accent-sage";
+  if (accent === "ochre") return "bg-accent-ochre";
+  if (accent === "terracotta") return "bg-secondary";
+  return "bg-primary";
+};
+
+type FieldProps = {
+  label: string;
+  children: ReactNode;
+};
+
+const Field = ({ label, children }: FieldProps) => (
   <label className="block">
     <span className="eyebrow">{label}</span>
     {children}
   </label>
 );
 
-const SelectInput = ({ value, onChange, options, testId }) => (
+type SelectInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  testId: string;
+};
+
+const SelectInput = ({ value, onChange, options, testId }: SelectInputProps) => (
   <div className="relative mt-2">
     <select
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(event) => onChange(event.target.value)}
       data-testid={testId}
       className="appearance-none w-full rounded-xl border border-border bg-white px-3.5 py-2.5 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
     >
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
         </option>
       ))}
     </select>
