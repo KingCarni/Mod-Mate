@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  runMockCompanionRuntime,
+  runCompanionRuntime,
   validateCompanionRuntimeRequest,
 } from "@/lib/companionRuntime";
 
@@ -31,6 +31,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = runMockCompanionRuntime(validation.request);
-  return NextResponse.json(response);
+  try {
+    const response = await runCompanionRuntime(validation.request);
+    return NextResponse.json(response);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Runtime request failed.";
+    return NextResponse.json(
+      {
+        error: "Runtime request failed.",
+        details: [message],
+      },
+      { status: 500 },
+    );
+  }
 }
