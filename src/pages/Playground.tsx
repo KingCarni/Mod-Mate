@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertCircle,
   Send,
   RotateCcw,
   Download,
@@ -11,19 +12,27 @@ import {
   Shield,
   Info,
   FileJson,
+  Loader2,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import SectionCard from "@/components/mate/SectionCard";
 import Badge from "@/components/mate/Badge";
 import { builderRules, companions, memoryCategories } from "@/data/mockData";
+import { createCompanionProfile } from "@/lib/companionProfiles";
 import { createContextPacket, stringifyContextPacket, validateContextPacket } from "@/lib/contextPackets";
 import {
   clearCompanionProfileLaunch,
   loadCompanionProfileDraft,
   loadCompanionProfileLaunch,
 } from "@/lib/companionProfileStorage";
+import type { CompanionRuntimeResponse } from "@/types/companionRuntime";
 import type { ContextPacket } from "@/types/contextPacket";
-import type { CompanionProfile } from "@/types/companionProfile";
+import type {
+  CompanionCategory,
+  CompanionProfile,
+  CompanionResponseStyle,
+  CompanionTone,
+} from "@/types/companionProfile";
 
 type ChatMessage = {
   id: number;
@@ -68,6 +77,31 @@ const toLocalCompanion = (profile: CompanionProfile): PlaygroundCompanion => ({
   profile,
 });
 
+const normalizeCategory = (category: string): CompanionCategory => {
+  if (category === "QA & Product") return "QA & Product";
+  if (category === "Game Design") return "Game Design";
+  if (category === "Tabletop RPG") return "Tabletop RPG";
+  if (category === "Support & Onboarding") return "Support & Onboarding";
+  if (category === "Character & Roleplay") return "Character & Roleplay";
+  if (category === "Business Workflow") return "Business Workflow";
+  if (category === "Product Docs") return "Product Docs";
+  if (category === "Creative Writing") return "Creative Writing";
+  return "Custom";
+};
+
+const getMockTone = (category: string): CompanionTone => {
+  if (category === "QA & Product") return "Direct";
+  if (category === "Character & Roleplay") return "Cinematic";
+  if (category === "Tabletop RPG") return "Playful";
+  return "Editorial";
+};
+
+const getMockResponseStyle = (category: string): CompanionResponseStyle => {
+  if (category === "QA & Product") return "Bullet-first";
+  if (category === "Support & Onboarding") return "Conversational";
+  return "Concise";
+};
+
 const getCompanionRules = (companion: PlaygroundCompanion) =>
   companion.profile?.systemRules?.length ? companion.profile.systemRules : builderRules;
 
@@ -79,6 +113,37 @@ const getCompanionMemoryLabels = (companion: PlaygroundCompanion) => {
   }
 
   return memoryCategories.map((category) => category.label);
+};
+
+const createRuntimeProfile = (companion: PlaygroundCompanion): CompanionProfile => {
+  if (companion.profile) return companion.profile;
+
+  return createCompanionProfile({
+    id: companion.id,
+    name: companion.name,
+    description: companion.description ?? `${companion.category} companion for mock playground testing.`,
+    category: normalizeCategory(companion.category),
+    role: `${companion.category} companion`,
+    tone: getMockTone(companion.category),
+    responseStyle: getMockResponseStyle(companion.category),
+    systemRules: builderRules,
+    memoryCategories: memoryCategories.map((category) => ({
+      id: category.id,
+      label: category.label,
+      color: category.color as "primary" | "sage" | "ochre" | "terracotta",
+      enabled: true,
+    })),
+    allowedActions: [
+      { id: "answer", label: "Answer in chat", enabled: true },
+      { id: "suggest", label: "Suggest next step", enabled: true },
+    ],
+    contextRules: [
+      { id: "visible-context", label: "Use visible context first", required: true },
+      { id: "ask-before-guessing", label: "Ask before guessing", required: true },
+    ],
+    status: companion.status === "Ready" ? "Ready" : "Draft",
+    now: STABLE_CONTEXT_PACKET_CREATED_AT,
+  });
 };
 
 const createInitialMessages = (companion: PlaygroundCompanion): ChatMessage[] => {
@@ -178,7 +243,7 @@ const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket 
       {
         id: "mock-runtime",
         level: "info",
-        message: "No real LLM call — responses are static placeholders.",
+        message: "Runtime currently uses the mock API route. No provider key is required yet.",
       },
       {
         id: companion.source === "local" ? "local-draft" : "local-context",
@@ -223,6 +288,9 @@ const Playground = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => createInitialMessages(mockCompanionOptions[0]));
   const [draft, setDraft] = useState("");
   const [loadNotice, setLoadNotice] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [runtimeResult, setRuntimeResult] = useState<CompanionRuntimeResponse | null>(null);
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const companionOptions = useMemo(
@@ -258,23 +326,71 @@ const Playground = () => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const send = () => {
-    if (!draft.trim()) return;
+  const send = async () => {
+    if (!draft.trim() || isSending) return;
+
     const userMsg: ChatMessage = {
       id: messages.length + 1,
       role: "user",
       content: draft.trim(),
     };
-    const stub: ChatMessage = {
-      id: messages.length + 2,
-      role: "assistant",
-      content: `Using ${selected.name} (${selected.source === "local" ? "your saved local draft" : "mock profile"}) and the standard context packet, I would answer with ${contextPacket.memorySections.length} memory sections and ${getCompanionRules(selected).length} guardrails available. (Mock response — no real model call.)`,
-    };
-    setMessages([...messages, userMsg, stub]);
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
     setDraft("");
+    setIsSending(true);
+    setRuntimeError(null);
+
+    try {
+      const response = await fetch("/api/runtime", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: createRuntimeProfile(selected),
+          contextPacket,
+          message: userMsg.content,
+          history: messages.filter((message) => message.role !== "system"),
+          mode: "mock",
+          provider: "mock",
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.details?.[0] ?? payload?.error ?? "Runtime request failed.");
+      }
+
+      const runtimePayload = payload as CompanionRuntimeResponse;
+      setRuntimeResult(runtimePayload);
+      setMessages([
+        ...nextMessages,
+        {
+          id: nextMessages.length + 1,
+          role: "assistant",
+          content: runtimePayload.answer,
+        },
+      ]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Runtime request failed.";
+      setRuntimeError(message);
+      setMessages([
+        ...nextMessages,
+        {
+          id: nextMessages.length + 1,
+          role: "assistant",
+          content: `Runtime error: ${message}`,
+        },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const reset = () => setMessages(createInitialMessages(selected));
+  const reset = () => {
+    setMessages(createInitialMessages(selected));
+    setRuntimeResult(null);
+    setRuntimeError(null);
+  };
 
   const exportContextPacket = () => {
     const blob = new Blob([contextJson], { type: "application/json;charset=utf-8" });
@@ -291,6 +407,8 @@ const Playground = () => {
   const selectCompanion = (companion: PlaygroundCompanion) => {
     setSelected(companion);
     setMessages(createInitialMessages(companion));
+    setRuntimeResult(null);
+    setRuntimeError(null);
     setOpen(false);
   };
 
@@ -304,7 +422,7 @@ const Playground = () => {
               Test the companion before anyone else does.
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-              Sample messages only — now using saved Builder profiles plus the standard context packet contract.
+              Messages now go through the reusable mock runtime API with profile + context packet + user input.
             </p>
             {loadNotice && (
               <p className="mt-2 text-xs text-muted-foreground" data-testid="playground-load-notice">
@@ -332,6 +450,16 @@ const Playground = () => {
             </button>
           </div>
         </div>
+
+        {runtimeError && (
+          <div className="rounded-2xl border border-secondary/40 bg-secondary/10 px-5 py-4 flex items-start gap-3" data-testid="runtime-error">
+            <AlertCircle className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold">Runtime request failed</p>
+              <p className="text-sm text-muted-foreground">{runtimeError}</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr,360px] gap-6">
           <div className="surface-card flex flex-col h-[72vh] min-h-[520px]">
@@ -422,6 +550,13 @@ const Playground = () => {
                   </div>
                 );
               })}
+              {isSending && (
+                <div className="flex justify-start" data-testid="runtime-loading">
+                  <div className="inline-flex items-center gap-2 rounded-2xl rounded-tl-sm bg-muted px-4 py-3 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Runtime thinking…
+                  </div>
+                </div>
+              )}
               <div ref={endRef} />
             </div>
 
@@ -444,19 +579,55 @@ const Playground = () => {
                 <button
                   type="button"
                   onClick={send}
+                  disabled={isSending}
                   data-testid="playground-send"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all disabled:opacity-60 disabled:hover:translate-y-0"
                 >
-                  <Send className="h-4 w-4" /> Send
+                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Send
                 </button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Mock response only — future runtime calls will send saved profile + context packet + user message.
+                Mock runtime only — no API key required yet. Future live mode will use the same request contract.
               </p>
             </div>
           </div>
 
           <aside className="space-y-5">
+            <SectionCard eyebrow="Runtime" title="Response metadata" testId="runtime-metadata">
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 mt-0.5 text-secondary" />
+                  <span>
+                    <span className="block font-medium">Mode</span>
+                    <span className="text-muted-foreground text-xs">
+                      {runtimeResult ? `${runtimeResult.mode} / ${runtimeResult.provider}` : "Waiting for first runtime call"}
+                    </span>
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Layers className="h-4 w-4 mt-0.5 text-accent-ochre" />
+                  <span>
+                    <span className="block font-medium">Estimated usage</span>
+                    <span className="text-muted-foreground text-xs">
+                      {runtimeResult
+                        ? `${runtimeResult.usage.estimatedPromptTokens} prompt tokens · ${runtimeResult.usage.estimatedResponseTokens} response tokens`
+                        : "No usage yet"}
+                    </span>
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Shield className="h-4 w-4 mt-0.5 text-accent-sage" />
+                  <span>
+                    <span className="block font-medium">Validation</span>
+                    <span className="text-muted-foreground text-xs">
+                      {contextValidation.ok ? "Context packet valid" : contextValidation.errors[0]}
+                    </span>
+                  </span>
+                </li>
+              </ul>
+            </SectionCard>
+
             <SectionCard eyebrow="Context packet" title="Sent with each message" testId="context-packet">
               <ul className="space-y-3 text-sm">
                 <li className="flex items-start gap-2">
@@ -477,29 +648,28 @@ const Playground = () => {
                     </span>
                   </span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Shield className="h-4 w-4 mt-0.5 text-accent-sage" />
-                  <span>
-                    <span className="block font-medium">Validation</span>
-                    <span className="text-muted-foreground text-xs">
-                      {contextValidation.ok ? "Context packet valid" : contextValidation.errors[0]}
-                    </span>
-                  </span>
-                </li>
               </ul>
             </SectionCard>
 
             <SectionCard eyebrow="Packet JSON" title="Context preview" testId="context-packet-json">
-              <div className="rounded-xl bg-primary text-primary-foreground p-4 max-h-[340px] overflow-auto">
+              <div className="rounded-xl bg-primary text-primary-foreground p-4 max-h-[260px] overflow-auto">
                 <pre className="text-[11px] leading-relaxed mono whitespace-pre-wrap" data-testid="context-packet-pre">
                   {contextJson}
                 </pre>
               </div>
             </SectionCard>
 
+            <SectionCard eyebrow="Prompt" title="Runtime preview" testId="runtime-prompt-preview">
+              <div className="rounded-xl bg-muted p-4 max-h-[260px] overflow-auto">
+                <pre className="text-[11px] leading-relaxed mono whitespace-pre-wrap">
+                  {runtimeResult?.promptPreview ?? "Send a message to generate a prompt preview."}
+                </pre>
+              </div>
+            </SectionCard>
+
             <SectionCard eyebrow="Warnings" title="Metadata" testId="playground-warnings">
               <ul className="space-y-2 text-xs text-muted-foreground">
-                {contextPacket.warnings.map((warning) => (
+                {(runtimeResult?.warnings ?? contextPacket.warnings).map((warning) => (
                   <li key={warning.id} className="flex items-start gap-2">
                     <Info className="h-3.5 w-3.5 mt-0.5" />
                     {warning.message}
@@ -507,7 +677,7 @@ const Playground = () => {
                 ))}
                 <li className="flex items-start gap-2">
                   <FileJson className="h-3.5 w-3.5 mt-0.5" />
-                  Context packet contract is typed and validated, but still mock-only.
+                  Runtime API is wired in mock mode. Live provider adapter comes next.
                 </li>
               </ul>
             </SectionCard>
