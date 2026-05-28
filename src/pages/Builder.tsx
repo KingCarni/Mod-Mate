@@ -36,6 +36,7 @@ import {
   clearCompanionProfileDraft,
   loadCompanionProfileDraft,
   saveCompanionProfileDraft,
+  saveCompanionProfileLaunch,
 } from "@/lib/companionProfileStorage";
 import {
   companionCategories,
@@ -251,6 +252,9 @@ const Builder = () => {
     });
 
     saveCompanionProfileDraft(profileToSave);
+    if (messageMode === "test") {
+      saveCompanionProfileLaunch(profileToSave);
+    }
     setSavedSnapshot(currentSnapshot);
     setLastSavedAt(now);
     setImportState({
