@@ -96,6 +96,16 @@ export const templateCategories = [
 
 export const templates = [
   {
+    id: "master-draft-story",
+    title: "Master Draft story companion",
+    category: "Creative Writing",
+    description:
+      "Production-style screenplay companion for story analysis, continuity, pitch clarity, and visual development notes.",
+    bg: "ochre",
+    image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
+    tag: "MOD-14",
+  },
+  {
     id: "screenplay",
     title: "Build a screenplay companion",
     category: "Creative Writing",
