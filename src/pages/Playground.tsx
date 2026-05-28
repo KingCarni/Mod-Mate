@@ -17,7 +17,11 @@ import SectionCard from "@/components/mate/SectionCard";
 import Badge from "@/components/mate/Badge";
 import { builderRules, companions, memoryCategories } from "@/data/mockData";
 import { createContextPacket, stringifyContextPacket, validateContextPacket } from "@/lib/contextPackets";
-import { loadCompanionProfileDraft } from "@/lib/companionProfileStorage";
+import {
+  clearCompanionProfileLaunch,
+  loadCompanionProfileDraft,
+  loadCompanionProfileLaunch,
+} from "@/lib/companionProfileStorage";
 import type { ContextPacket } from "@/types/contextPacket";
 import type { CompanionProfile } from "@/types/companionProfile";
 
@@ -118,7 +122,7 @@ const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket 
     activeTool: "playground",
     currentScreenContext:
       companion.source === "local"
-        ? "User is testing a saved local companion profile inside the Mod-Mate Playground. The profile came from browser localStorage."
+        ? "User is testing a saved local companion profile inside the Mod-Mate Playground. The profile came from browser storage."
         : "User is testing a mock companion inside the Mod-Mate Playground with mock project context only.",
     selectedText:
       "The companion should answer using the active profile, visible context packet, and configured guardrails.",
@@ -228,14 +232,20 @@ const Playground = () => {
   const contextJson = stringifyContextPacket(contextPacket);
 
   useEffect(() => {
-    const stored = loadCompanionProfileDraft();
+    const launched = loadCompanionProfileLaunch();
+    const stored = launched.ok === true ? launched : loadCompanionProfileDraft();
 
     if (stored.ok === true) {
       const savedCompanion = toLocalCompanion(stored.profile);
       setLocalCompanion(savedCompanion);
       setSelected(savedCompanion);
       setMessages(createInitialMessages(savedCompanion));
-      setLoadNotice(`Loaded saved local draft: ${savedCompanion.name}.`);
+      setLoadNotice(
+        launched.ok === true
+          ? `Loaded launch draft: ${savedCompanion.name}.`
+          : `Loaded saved local draft: ${savedCompanion.name}.`,
+      );
+      if (launched.ok === true) clearCompanionProfileLaunch();
     } else if (stored.ok === false) {
       setLoadNotice(`Saved local draft could not load: ${stored.errors.slice(0, 2).join(" ")}`);
     }
