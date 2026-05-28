@@ -8,7 +8,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Link } from "@/components/compat/Router";
 import {
   AlertCircle,
   CheckCircle2,
@@ -84,10 +83,48 @@ type ImportState =
   | { type: "success"; message: string }
   | { type: "error"; message: string };
 
+type BuilderSnapshotInput = {
+  name: string;
+  description: string;
+  category: CompanionCategory;
+  role: string;
+  tone: CompanionTone;
+  style: CompanionResponseStyle;
+  rules: string[];
+  memory: CompanionMemoryCategory[];
+  actions: CompanionAction[];
+};
+
 const idleMessage: ImportState = {
   type: "idle",
   message: "Export or import portable companion profiles as JSON.",
 };
+
+const createBuilderSnapshot = (input: BuilderSnapshotInput) =>
+  JSON.stringify({
+    name: input.name,
+    description: input.description,
+    category: input.category,
+    role: input.role,
+    tone: input.tone,
+    style: input.style,
+    rules: input.rules,
+    memory: input.memory,
+    actions: input.actions,
+  });
+
+const createBuilderSnapshotFromProfile = (profile: CompanionProfile) =>
+  createBuilderSnapshot({
+    name: profile.name,
+    description: profile.description,
+    category: profile.category,
+    role: profile.persona.role,
+    tone: profile.persona.tone,
+    style: profile.persona.responseStyle,
+    rules: profile.systemRules,
+    memory: profile.memoryCategories,
+    actions: profile.allowedActions,
+  });
 
 const Builder = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -126,7 +163,22 @@ const Builder = () => {
 
   const profileJson = stringifyCompanionProfile(profile);
   const validation = validateCompanionProfile(profile);
-  const hasUnsavedChanges = hydrated && savedSnapshot !== profileJson;
+  const currentSnapshot = useMemo(
+    () =>
+      createBuilderSnapshot({
+        name,
+        description,
+        category,
+        role,
+        tone,
+        style,
+        rules,
+        memory,
+        actions,
+      }),
+    [actions, category, description, memory, name, role, rules, style, tone],
+  );
+  const hasUnsavedChanges = hydrated && savedSnapshot !== currentSnapshot;
 
   const applyProfileToBuilder = (nextProfile: CompanionProfile) => {
     setName(nextProfile.name);
@@ -145,7 +197,7 @@ const Builder = () => {
 
     if (stored.ok === true) {
       applyProfileToBuilder(stored.profile);
-      setSavedSnapshot(stringifyCompanionProfile(stored.profile));
+      setSavedSnapshot(createBuilderSnapshotFromProfile(stored.profile));
       setLastSavedAt(stored.profile.updatedAt);
       setImportState({
         type: "success",
@@ -156,9 +208,9 @@ const Builder = () => {
         type: "error",
         message: `Local draft could not load: ${stored.errors.slice(0, 2).join(" ")}`,
       });
-      setSavedSnapshot(profileJson);
+      setSavedSnapshot(currentSnapshot);
     } else {
-      setSavedSnapshot(profileJson);
+      setSavedSnapshot(currentSnapshot);
     }
 
     setHydrated(true);
@@ -171,13 +223,13 @@ const Builder = () => {
     setNewRule("");
   };
 
-  const saveDraft = () => {
+  const persistDraft = (messageMode: "save" | "test" = "save"): CompanionProfile | null => {
     if (!validation.ok) {
       setImportState({
         type: "error",
         message: `Draft cannot save yet: ${validation.errors[0]}`,
       });
-      return;
+      return null;
     }
 
     const now = new Date().toISOString();
@@ -197,15 +249,29 @@ const Builder = () => {
       updatedAt: now,
       now,
     });
-    const nextSnapshot = stringifyCompanionProfile(profileToSave);
 
     saveCompanionProfileDraft(profileToSave);
-    setSavedSnapshot(nextSnapshot);
+    setSavedSnapshot(currentSnapshot);
     setLastSavedAt(now);
     setImportState({
       type: "success",
-      message: `Saved local draft for ${profileToSave.name}.`,
+      message:
+        messageMode === "test"
+          ? `Saved ${profileToSave.name}. Opening Playground...`
+          : `Saved local draft for ${profileToSave.name}.`,
     });
+
+    return profileToSave;
+  };
+
+  const saveDraft = () => {
+    persistDraft("save");
+  };
+
+  const testCompanion = () => {
+    const savedProfile = persistDraft("test");
+    if (!savedProfile) return;
+    window.location.assign("/playground");
   };
 
   const resetToDefault = () => {
@@ -226,7 +292,7 @@ const Builder = () => {
 
   const clearLocalDraft = () => {
     clearCompanionProfileDraft();
-    setSavedSnapshot(profileJson);
+    setSavedSnapshot(currentSnapshot);
     setLastSavedAt(null);
     setImportState({
       type: "success",
@@ -368,13 +434,14 @@ const Builder = () => {
             >
               <Save className="h-4 w-4" /> Save draft
             </button>
-            <Link
-              to="/playground"
+            <button
+              type="button"
               data-testid="builder-test"
+              onClick={testCompanion}
               className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all"
             >
               <FlaskConical className="h-4 w-4" /> Test Companion
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -615,13 +682,14 @@ const Builder = () => {
                 </p>
               </div>
             </div>
-            <Link
-              to="/playground"
+            <button
+              type="button"
+              onClick={testCompanion}
               data-testid="builder-launch-playground"
-              className="block text-center rounded-full bg-primary text-primary-foreground px-5 py-3 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all"
+              className="block w-full text-center rounded-full bg-primary text-primary-foreground px-5 py-3 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all"
             >
-              Launch in Playground →
-            </Link>
+              Save & launch Playground →
+            </button>
           </aside>
         </div>
       </div>
