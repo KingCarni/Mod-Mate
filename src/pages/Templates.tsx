@@ -9,7 +9,10 @@ import TemplateCard from "@/components/mate/TemplateCard";
 import Badge from "@/components/mate/Badge";
 import { templates, templateCategories, futureConcepts } from "@/data/mockData";
 import { getCompanionProfileTemplate } from "@/lib/companionProfileTemplates";
-import { saveCompanionProfileTemplate } from "@/lib/companionProfileStorage";
+import {
+  saveCompanionProfileDraft,
+  saveCompanionProfileTemplate,
+} from "@/lib/companionProfileStorage";
 
 const Templates = () => {
   const router = useRouter();
@@ -37,7 +40,8 @@ const Templates = () => {
     }
 
     saveCompanionProfileTemplate(profileTemplate);
-    router.push("/builder?template=master-draft-story");
+    saveCompanionProfileDraft(profileTemplate);
+    router.push(`/builder?template=${templateId}`);
   };
 
   return (
