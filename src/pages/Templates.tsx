@@ -2,15 +2,20 @@
 
 import React, { useState, useMemo } from "react";
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import SectionCard from "@/components/mate/SectionCard";
 import TemplateCard from "@/components/mate/TemplateCard";
 import Badge from "@/components/mate/Badge";
 import { templates, templateCategories, futureConcepts } from "@/data/mockData";
+import { getCompanionProfileTemplate } from "@/lib/companionProfileTemplates";
+import { saveCompanionProfileTemplate } from "@/lib/companionProfileStorage";
 
 const Templates = () => {
+  const router = useRouter();
   const [active, setActive] = useState("All");
   const [query, setQuery] = useState("");
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return templates.filter((t) => {
@@ -23,6 +28,18 @@ const Templates = () => {
     });
   }, [active, query]);
 
+  const useTemplate = (templateId: string) => {
+    const profileTemplate = getCompanionProfileTemplate(templateId);
+
+    if (!profileTemplate) {
+      setTemplateNotice("This template is still a visual placeholder. A full profile has not been added yet.");
+      return;
+    }
+
+    saveCompanionProfileTemplate(profileTemplate);
+    router.push("/builder?template=master-draft-story");
+  };
+
   return (
     <AppShell>
       <div data-testid="templates-page" className="space-y-8">
@@ -32,6 +49,11 @@ const Templates = () => {
             <h1 className="font-heading text-3xl md:text-4xl font-medium tracking-tight mt-2 max-w-3xl">
               Find a companion shape that already understands your work.
             </h1>
+            {templateNotice && (
+              <p className="mt-3 text-sm text-muted-foreground" data-testid="template-notice">
+                {templateNotice}
+              </p>
+            )}
           </div>
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -45,7 +67,6 @@ const Templates = () => {
           </div>
         </div>
 
-        {/* Category pills */}
         <div className="flex flex-wrap gap-2" data-testid="templates-filters">
           {templateCategories.map((c) => (
             <button
@@ -64,13 +85,17 @@ const Templates = () => {
           ))}
         </div>
 
-        {/* Grid */}
         <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-[minmax(240px,_auto)]"
           data-testid="templates-grid"
         >
           {filtered.map((t, i) => (
-            <TemplateCard key={t.id} template={t} featured={i === 0 && filtered.length > 3} />
+            <TemplateCard
+              key={t.id}
+              template={t}
+              featured={i === 0 && filtered.length > 3}
+              onUseTemplate={useTemplate}
+            />
           ))}
           {filtered.length === 0 && (
             <div className="md:col-span-2 lg:col-span-3 border border-dashed border-border rounded-2xl p-12 text-center text-muted-foreground" data-testid="templates-empty">
@@ -79,7 +104,6 @@ const Templates = () => {
           )}
         </div>
 
-        {/* Future concepts */}
         <SectionCard
           eyebrow="Future concepts"
           title="What companions could become next"
