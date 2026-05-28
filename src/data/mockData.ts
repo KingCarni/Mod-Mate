@@ -106,6 +106,15 @@ export const templates = [
     tag: "MOD-14",
   },
   {
+    id: "qatalyst-qa-lead",
+    title: "QAtalyst QA Lead Companion",
+    category: "QA & Product",
+    description:
+      "Production-style QA companion for triage, risk review, coverage gaps, release readiness, and workflow-specific quality guidance.",
+    bg: "sage",
+    tag: "MOD-15",
+  },
+  {
     id: "screenplay",
     title: "Build a screenplay companion",
     category: "Creative Writing",
