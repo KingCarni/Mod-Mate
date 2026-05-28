@@ -53,12 +53,12 @@ const Landing = () => {
               Mod-Mate · Modular AI companions
             </Badge>
             <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.02]">
-              Build custom AI <br />
-              <span className="italic font-light text-primary/90">companions</span> for any project.
+              Build your own modular AI <br />
+              <span className="italic font-light text-primary/90">companion</span> for any world.
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-xl leading-relaxed">
-              Create modular companions with their own personality, rules, memory categories, and
-              use-case templates — then plug them into the apps and workflows that need them.
+              Build your own modular AI companion for any project, product, workflow, or creative
+              world — with its own personality, rules, memory categories, and use-case templates.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
@@ -130,12 +130,14 @@ const Landing = () => {
           <div className="marquee flex gap-12 whitespace-nowrap text-sm text-muted-foreground">
             {[...Array(2)].flatMap((_, i) =>
               [
-                "Master Draft",
-                "QAtalyst",
-                "Campaign Brain",
-                "Idle Game Creator",
-                "React Widget",
-                "Custom API",
+                "Writing companions",
+                "QA & product companions",
+                "Game design companions",
+                "Tabletop GM companions",
+                "Support companions",
+                "Onboarding companions",
+                "Workflow assistants",
+                "Character companions",
               ].map((name, j) => (
                 <span key={`${i}-${j}`} className="flex items-center gap-3">
                   <span className="h-1.5 w-1.5 rounded-full bg-secondary" />

@@ -67,6 +67,23 @@ support companions, onboarding helpers, character/roleplay companions, etc.
 - Custom design tokens, Outfit + Figtree + JetBrains Mono via Google Fonts,
   earthy palette, grain texture and marquee utilities.
 
+**2026-01 (pass 2 — content / positioning cleanup)**
+- Removed all references to internal projects (Master Draft, QAtalyst, Campaign
+  Brain, Idle Game Creator) from public-facing UI.
+- Hero now reads "Build your own modular AI companion for any world." with the
+  subheading "Build your own modular AI companion for any project, product,
+  workflow, or creative world…".
+- Marquee replaced with generic companion categories (Writing companions, QA &
+  product companions, Game design companions, Tabletop GM companions, Support
+  companions, Onboarding companions, Workflow assistants, Character companions).
+- Templates renamed / reshaped: "Tune a game economy", "Turn docs into a support
+  companion", "Build a workflow assistant for your team" (and the existing
+  generic ones kept).
+- Integrations replaced with neutral placeholders: React Widget, Custom Web App,
+  Product Dashboard, Documentation Site, Internal Tool, API Integration,
+  SDK (Coming Soon).
+- Workspace label switched from "Acme Studio" → "Your Workspace".
+
 ## Testing
 - Frontend tested via `testing_agent_v3` — all 7 routes, navigation, builder JSON
   update, rule add/remove, action toggles, playground send/reset/companion switch,

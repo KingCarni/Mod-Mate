@@ -93,7 +93,7 @@ const AppShell = ({ children }) => {
               <div className="hidden lg:block">
                 <p className="eyebrow">Workspace</p>
                 <p className="text-sm font-medium text-foreground -mt-0.5">
-                  Acme Studio · {active?.label || "Home"}
+                  Your Workspace · {active?.label || "Home"}
                 </p>
               </div>
             </div>
