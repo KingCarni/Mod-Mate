@@ -11,8 +11,22 @@ const BGS = {
   primary: "bg-[#D7E0DE]",
 };
 
-const TemplateCard = ({ template, featured = false }) => {
-  const bg = BGS[template.bg] || BGS.sage;
+type TemplateCardProps = {
+  template: {
+    id: string;
+    title: string;
+    category: string;
+    description: string;
+    bg: string;
+    image?: string;
+    tag?: string;
+  };
+  featured?: boolean;
+  onUseTemplate?: (templateId: string) => void;
+};
+
+const TemplateCard = ({ template, featured = false, onUseTemplate }: TemplateCardProps) => {
+  const bg = BGS[template.bg as keyof typeof BGS] || BGS.sage;
   return (
     <article
       className={`group relative grain rounded-3xl border border-border ${bg} ${
@@ -39,6 +53,7 @@ const TemplateCard = ({ template, featured = false }) => {
           <p className="text-sm text-primary/70 mt-2 max-w-md">{template.description}</p>
           <button
             type="button"
+            onClick={() => onUseTemplate?.(template.id)}
             data-testid={`template-${template.id}-cta`}
             className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-primary bg-white/70 backdrop-blur rounded-full px-4 py-2 hover:bg-white transition-colors"
           >
