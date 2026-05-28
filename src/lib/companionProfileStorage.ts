@@ -9,6 +9,7 @@ import type {
 
 export const COMPANION_PROFILE_STORAGE_KEY = "mod-mate.builder.profile.v1";
 export const COMPANION_PROFILE_LAUNCH_KEY = "mod-mate.playground.launchProfile.v1";
+export const COMPANION_PROFILE_TEMPLATE_KEY = "mod-mate.builder.templateProfile.v1";
 
 export type StoredCompanionProfileResult =
   | { ok: true; profile: CompanionProfile }
@@ -60,4 +61,19 @@ export const loadCompanionProfileLaunch = (): StoredCompanionProfileResult => {
 export const clearCompanionProfileLaunch = (): void => {
   if (!hasSessionStorage()) return;
   window.sessionStorage.removeItem(COMPANION_PROFILE_LAUNCH_KEY);
+};
+
+export const saveCompanionProfileTemplate = (profile: CompanionProfile): void => {
+  if (!hasSessionStorage()) return;
+  window.sessionStorage.setItem(COMPANION_PROFILE_TEMPLATE_KEY, stringifyCompanionProfile(profile));
+};
+
+export const loadCompanionProfileTemplate = (): StoredCompanionProfileResult => {
+  if (!hasSessionStorage()) return { ok: null, errors: [] };
+  return parseStoredProfile(window.sessionStorage.getItem(COMPANION_PROFILE_TEMPLATE_KEY));
+};
+
+export const clearCompanionProfileTemplate = (): void => {
+  if (!hasSessionStorage()) return;
+  window.sessionStorage.removeItem(COMPANION_PROFILE_TEMPLATE_KEY);
 };
