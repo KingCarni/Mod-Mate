@@ -42,6 +42,8 @@ type PlaygroundCompanion = {
   profile?: CompanionProfile;
 };
 
+const STABLE_CONTEXT_PACKET_CREATED_AT = "2026-01-01T00:00:00.000Z";
+
 const getInitials = (value: string) =>
   value
     .split(/\s+/)
@@ -208,6 +210,7 @@ const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket 
         description: "Future action hint for saving useful facts with confirmation.",
       },
     ],
+    createdAt: companion.profile?.updatedAt ?? STABLE_CONTEXT_PACKET_CREATED_AT,
   });
 };
 
