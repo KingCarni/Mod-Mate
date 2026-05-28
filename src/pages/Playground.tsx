@@ -15,9 +15,11 @@ import {
 import AppShell from "@/components/layout/AppShell";
 import SectionCard from "@/components/mate/SectionCard";
 import Badge from "@/components/mate/Badge";
-import { builderRules, companions, memoryCategories, sampleChat } from "@/data/mockData";
+import { builderRules, companions, memoryCategories } from "@/data/mockData";
 import { createContextPacket, stringifyContextPacket, validateContextPacket } from "@/lib/contextPackets";
+import { loadCompanionProfileDraft } from "@/lib/companionProfileStorage";
 import type { ContextPacket } from "@/types/contextPacket";
+import type { CompanionProfile } from "@/types/companionProfile";
 
 type ChatMessage = {
   id: number;
@@ -25,8 +27,87 @@ type ChatMessage = {
   content: string;
 };
 
-const createMockContextPacket = (companionName: string): ContextPacket =>
-  createContextPacket({
+type PlaygroundCompanion = {
+  id: string;
+  name: string;
+  category: string;
+  status: string;
+  initials: string;
+  description?: string;
+  source: "mock" | "local";
+  profile?: CompanionProfile;
+};
+
+const getInitials = (value: string) =>
+  value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "MM";
+
+const toMockCompanion = (companion: (typeof companions)[number]): PlaygroundCompanion => ({
+  ...companion,
+  source: "mock",
+});
+
+const toLocalCompanion = (profile: CompanionProfile): PlaygroundCompanion => ({
+  id: `local-${profile.id}`,
+  name: profile.name,
+  category: profile.category,
+  status: "Local Draft",
+  initials: getInitials(profile.name),
+  description: profile.description,
+  source: "local",
+  profile,
+});
+
+const getCompanionRules = (companion: PlaygroundCompanion) =>
+  companion.profile?.systemRules?.length ? companion.profile.systemRules : builderRules;
+
+const getCompanionMemoryLabels = (companion: PlaygroundCompanion) => {
+  if (companion.profile?.memoryCategories?.length) {
+    return companion.profile.memoryCategories
+      .filter((category) => category.enabled)
+      .map((category) => category.label);
+  }
+
+  return memoryCategories.map((category) => category.label);
+};
+
+const createInitialMessages = (companion: PlaygroundCompanion): ChatMessage[] => {
+  const memoryCount = getCompanionMemoryLabels(companion).length;
+  const ruleCount = getCompanionRules(companion).length;
+
+  return [
+    {
+      id: 1,
+      role: "system",
+      content: `Companion: ${companion.name} · Memory loaded: ${memoryCount} categories · Rules: ${ruleCount}`,
+    },
+    {
+      id: 2,
+      role: "user",
+      content:
+        "Here's the cold open for act one. Does the tone match the rest of the script and the character bible?",
+    },
+    {
+      id: 3,
+      role: "assistant",
+      content:
+        companion.source === "local"
+          ? `Using your saved local profile for ${companion.name}, I would check the current scene against its configured role, tone, memory categories, and guardrails. (Mock response — no real model call.)`
+          : "Based on the companion profile and the context provided, I'd focus this companion on concise, context-aware guidance. The current rule set is clear, but you may want to add one guardrail about not inventing missing project facts.",
+    },
+  ];
+};
+
+const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket => {
+  const rules = getCompanionRules(companion);
+  const memoryLabels = getCompanionMemoryLabels(companion);
+  const persona = companion.profile?.persona;
+
+  return createContextPacket({
     sourceApp: {
       id: "mod-mate-playground",
       name: "Mod-Mate Playground",
@@ -36,36 +117,55 @@ const createMockContextPacket = (companionName: string): ContextPacket =>
     projectId: "demo-workspace",
     activeTool: "playground",
     currentScreenContext:
-      "User is testing a companion inside the Mod-Mate Playground with mock project context only.",
+      companion.source === "local"
+        ? "User is testing a saved local companion profile inside the Mod-Mate Playground. The profile came from browser localStorage."
+        : "User is testing a mock companion inside the Mod-Mate Playground with mock project context only.",
     selectedText:
       "The companion should answer using the active profile, visible context packet, and configured guardrails.",
     selectedEntity: {
-      id: companionName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      type: "companion-profile",
-      label: companionName,
-      value: "Selected companion profile for this playground test.",
+      id: companion.id,
+      type: companion.source === "local" ? "local-companion-profile" : "mock-companion-profile",
+      label: companion.name,
+      value: companion.description ?? "Selected companion profile for this playground test.",
+      metadata: {
+        category: companion.category,
+        status: companion.status,
+        source: companion.source,
+      },
     },
     memorySections: [
       {
         id: "project-facts",
         label: "Project facts",
-        content: "This is a UI-only preview. No backend, auth, database, or model call is active yet.",
+        content:
+          companion.source === "local"
+            ? "This playground is using a saved local Builder profile. No backend, auth, database, or model call is active yet."
+            : "This is a UI-only preview. No backend, auth, database, or model call is active yet.",
         priority: "high",
-        source: "mock-playground",
+        source: companion.source === "local" ? "local-builder-draft" : "mock-playground",
       },
       {
         id: "rules",
         label: "Active guardrails",
-        content: builderRules.join("\n"),
+        content: rules.join("\n"),
         priority: "normal",
-        source: "builder-defaults",
+        source: companion.source === "local" ? "saved-profile" : "builder-defaults",
       },
       {
         id: "memory-categories",
         label: "Memory categories",
-        content: memoryCategories.map((category) => category.label).join(", "),
+        content: memoryLabels.join(", "),
         priority: "normal",
-        source: "mock-data",
+        source: companion.source === "local" ? "saved-profile" : "mock-data",
+      },
+      {
+        id: "persona",
+        label: "Persona",
+        content: persona
+          ? `${persona.role} · ${persona.tone} · ${persona.responseStyle}`
+          : `${companion.category} companion · mock profile`,
+        priority: "normal",
+        source: companion.source === "local" ? "saved-profile" : "mock-data",
       },
     ],
     warnings: [
@@ -75,15 +175,20 @@ const createMockContextPacket = (companionName: string): ContextPacket =>
         message: "No real LLM call — responses are static placeholders.",
       },
       {
-        id: "local-context",
+        id: companion.source === "local" ? "local-draft" : "local-context",
         level: "warning",
-        message: "Context packet is mock-only and is not persisted or sent to a server yet.",
+        message:
+          companion.source === "local"
+            ? "Using browser-local saved profile only. This is not synced to an account or database yet."
+            : "Context packet is mock-only and is not persisted or sent to a server yet.",
       },
     ],
     metadata: {
       runtimeMode: "mock",
       source: "playground-preview",
-      selectedCompanion: companionName,
+      selectedCompanion: companion.name,
+      companionSource: companion.source,
+      profileSchemaVersion: companion.profile?.schemaVersion,
     },
     actionHints: [
       {
@@ -100,17 +205,41 @@ const createMockContextPacket = (companionName: string): ContextPacket =>
       },
     ],
   });
+};
+
+const mockCompanionOptions = companions.map(toMockCompanion);
 
 const Playground = () => {
-  const [selected, setSelected] = useState(companions[0]);
+  const [localCompanion, setLocalCompanion] = useState<PlaygroundCompanion | null>(null);
+  const [selected, setSelected] = useState<PlaygroundCompanion>(mockCompanionOptions[0]);
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(sampleChat as ChatMessage[]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => createInitialMessages(mockCompanionOptions[0]));
   const [draft, setDraft] = useState("");
+  const [loadNotice, setLoadNotice] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const contextPacket = useMemo(() => createMockContextPacket(selected.name), [selected.name]);
+  const companionOptions = useMemo(
+    () => (localCompanion ? [localCompanion, ...mockCompanionOptions] : mockCompanionOptions),
+    [localCompanion],
+  );
+
+  const contextPacket = useMemo(() => createMockContextPacket(selected), [selected]);
   const contextValidation = validateContextPacket(contextPacket);
   const contextJson = stringifyContextPacket(contextPacket);
+
+  useEffect(() => {
+    const stored = loadCompanionProfileDraft();
+
+    if (stored.ok === true) {
+      const savedCompanion = toLocalCompanion(stored.profile);
+      setLocalCompanion(savedCompanion);
+      setSelected(savedCompanion);
+      setMessages(createInitialMessages(savedCompanion));
+      setLoadNotice(`Loaded saved local draft: ${savedCompanion.name}.`);
+    } else if (stored.ok === false) {
+      setLoadNotice(`Saved local draft could not load: ${stored.errors.slice(0, 2).join(" ")}`);
+    }
+  }, []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -126,14 +255,13 @@ const Playground = () => {
     const stub: ChatMessage = {
       id: messages.length + 2,
       role: "assistant",
-      content:
-        "Based on the companion profile and the standard context packet, I would answer using the visible screen context, memory sections, warnings, and action hints. (Mock response — no real model call.)",
+      content: `Using ${selected.name} (${selected.source === "local" ? "your saved local draft" : "mock profile"}) and the standard context packet, I would answer with ${contextPacket.memorySections.length} memory sections and ${getCompanionRules(selected).length} guardrails available. (Mock response — no real model call.)`,
     };
     setMessages([...messages, userMsg, stub]);
     setDraft("");
   };
 
-  const reset = () => setMessages(sampleChat as ChatMessage[]);
+  const reset = () => setMessages(createInitialMessages(selected));
 
   const exportContextPacket = () => {
     const blob = new Blob([contextJson], { type: "application/json;charset=utf-8" });
@@ -147,6 +275,12 @@ const Playground = () => {
     URL.revokeObjectURL(url);
   };
 
+  const selectCompanion = (companion: PlaygroundCompanion) => {
+    setSelected(companion);
+    setMessages(createInitialMessages(companion));
+    setOpen(false);
+  };
+
   return (
     <AppShell>
       <div data-testid="playground-page" className="space-y-6">
@@ -157,8 +291,13 @@ const Playground = () => {
               Test the companion before anyone else does.
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-              Sample messages only — now backed by the standard Mod-Mate context packet contract.
+              Sample messages only — now using saved Builder profiles plus the standard context packet contract.
             </p>
+            {loadNotice && (
+              <p className="mt-2 text-xs text-muted-foreground" data-testid="playground-load-notice">
+                {loadNotice}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -196,24 +335,23 @@ const Playground = () => {
                   </span>
                   <span className="text-left">
                     <span className="block text-sm font-medium leading-tight">{selected.name}</span>
-                    <span className="block text-xs text-muted-foreground">{selected.category}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {selected.category} · {selected.source === "local" ? "Saved local draft" : "Mock template"}
+                    </span>
                   </span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
 
                 {open && (
                   <div
-                    className="absolute z-20 top-full left-0 mt-2 w-72 rounded-2xl border border-border bg-white shadow-lift p-1.5"
+                    className="absolute z-20 top-full left-0 mt-2 w-80 rounded-2xl border border-border bg-white shadow-lift p-1.5"
                     data-testid="companion-dropdown"
                   >
-                    {companions.map((companion) => (
+                    {companionOptions.map((companion) => (
                       <button
                         key={companion.id}
                         type="button"
-                        onClick={() => {
-                          setSelected(companion);
-                          setOpen(false);
-                        }}
+                        onClick={() => selectCompanion(companion)}
                         data-testid={`companion-option-${companion.id}`}
                         className={`flex items-center gap-3 w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted ${
                           selected.id === companion.id ? "bg-muted" : ""
@@ -224,15 +362,17 @@ const Playground = () => {
                         </span>
                         <span className="flex-1">
                           <span className="block font-medium text-sm">{companion.name}</span>
-                          <span className="block text-xs text-muted-foreground">{companion.category}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {companion.category} · {companion.source === "local" ? "Saved local draft" : "Mock template"}
+                          </span>
                         </span>
-                        <Badge tone="neutral">{companion.status}</Badge>
+                        <Badge tone={companion.source === "local" ? "sage" : "neutral"}>{companion.status}</Badge>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              <Badge tone="sage" data-testid="playground-status">
+              <Badge tone={selected.source === "local" ? "sage" : "neutral"} data-testid="playground-status">
                 {selected.status}
               </Badge>
             </div>
@@ -298,7 +438,7 @@ const Playground = () => {
                 </button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Mock response only — future runtime calls will send profile + context packet + user message.
+                Mock response only — future runtime calls will send saved profile + context packet + user message.
               </p>
             </div>
           </div>
@@ -309,8 +449,10 @@ const Playground = () => {
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 mt-0.5 text-secondary" />
                   <span>
-                    <span className="block font-medium">Source app</span>
-                    <span className="text-muted-foreground text-xs">{contextPacket.sourceApp.name}</span>
+                    <span className="block font-medium">Companion source</span>
+                    <span className="text-muted-foreground text-xs">
+                      {selected.source === "local" ? "Saved local Builder draft" : "Mock template"}
+                    </span>
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
