@@ -1,0 +1,76 @@
+{
+  "theme": "Light",
+  "archetype": "1 (Organic & Earthy)",
+  "vibe": "Approachable, creator-friendly, tactile, polished, SaaS-quality without the enterprise sterility.",
+  "color_palette": {
+    "background": "#F9F8F6",
+    "surface": "#FFFFFF",
+    "surface_glass": "rgba(255, 255, 255, 0.7)",
+    "primary": "#1B3B36",
+    "secondary": "#C65D47",
+    "accent_sage": "#8A9A86",
+    "accent_ochre": "#D69F4C",
+    "text_primary": "#1C1917",
+    "text_secondary": "#57534E",
+    "border": "#EAE6DF",
+    "border_hover": "#D1CFC7",
+    "hover_bg": "#F5F3EC",
+    "forbidden_colors": ["#9D4CDD", "#1B93A4", "purple/teal gradients"]
+  },
+  "typography": {
+    "headings_font": "Outfit",
+    "body_font": "Figtree",
+    "anti_default_rule": true,
+    "sizes": {
+      "h1": "text-5xl sm:text-6xl tracking-tight font-medium",
+      "h2": "text-3xl sm:text-4xl tracking-tight font-medium",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm uppercase tracking-widest font-semibold"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing, Optical Alignment, Negative Space",
+    "containers": "p-8 or p-12 internal padding for containers with borders",
+    "grid_mode": "Bento Grid Protocol (Tetris for Landing, Control Room for Dashboard)",
+    "border_radius": "rounded-2xl to rounded-3xl for large surfaces, rounded-xl for inner cards to create a soft, tactile clay-like feel",
+    "shadows": "Soft diffuse ambient shadows tinted earthy: shadow-[0_8px_32px_rgba(27,59,54,0.06)]"
+  },
+  "component_strategies": {
+    "general": "Solid warmth surfaces. Subtle rounded corners. Avoid 'glassmorphism' on dashboards to retain organic solidity. Use glass only on the marketing sticky header.",
+    "buttons": "Primary: #1B3B36 background, #F9F8F6 text. Secondary/Destructive: #C65D47 background. Hover: Add a slight `-translate-y-0.5` lift and slightly lighter hue. High contrast focus rings.",
+    "cards": "Flat background (#FFFFFF or tinted earthy off-white), 1px subtle border (#EAE6DF), no shadow by default. On hover: subtle lift and soft ambient shadow.",
+    "badges": "Tiny, uppercase, wide tracking, pill-shaped (rounded-full). Colors derived from accents (Sage, Ochre, Terracotta)."
+  },
+  "pages": {
+    "landing": "Asymmetrical bento grids, overlapping elements. Use the hero background image with a light fade. 'Editorial ribbon' marquee (slow, organic) for integrations/features.",
+    "dashboard": "Control room grid layout (grid-cols-1 md:grid-cols-3 lg:grid-cols-4). Dense but clear with tight gaps (gap-6). Persistent sidebar navigation.",
+    "companion_builder": "Form sections using Shadcn UI but customized to the earthy palette. Use soft rounded inputs, clear label hierarchy, and left-aligned text.",
+    "chat_playground": "Two-pane layout. Companion selector on left, chat stream on right. Chat bubbles should be soft and asymmetrical (rounded-tl-sm for incoming, rounded-tr-sm for outgoing).",
+    "templates_explore": "Large colorful cards using the accented earthy colors (Sage, Ochre, Terracotta backgrounds) with the 3D claymation images.",
+    "integrations": "Grid of small utility cards with status badges. Clean, functional, and easily scannable.",
+    "settings": "Standard vertical list/form layout. Left-aligned form labels with generous spacing between sections."
+  },
+  "media": {
+    "hero_background": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/ee237e47b114b5ea14b7d1b83100a6e554d1d8f79aac2278a3442198faafc3d8.png",
+      "description": "Abstract organic shapes in earthy tones, soft matte 3D render, clay texture."
+    },
+    "template_creative": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
+      "description": "Soft 3D render of an antique typewriter made of matte sage green clay."
+    },
+    "template_rpg": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/2d35c4f2a5070a4a8e5b2e6d12f2e0f1b0aed32187cf92ac948b142571b0b0f2.png",
+      "description": "Soft 3D render of tabletop RPG dice made of matte terracotta clay."
+    },
+    "template_business": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/62258c8504fc1c6292f4fc093b2d8f1a4f03230a0109cf36cd3da556b61a47f3.png",
+      "description": "Soft 3D render of a briefcase and coffee cup made of matte ochre clay."
+    }
+  },
+  "testing": {
+    "data_testid_rule": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case."
+  }
+}
