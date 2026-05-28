@@ -40,6 +40,8 @@ type ChatMessage = {
   content: string;
 };
 
+type RuntimeModeSelection = "mock" | "live";
+
 type PlaygroundCompanion = {
   id: string;
   name: string;
@@ -121,7 +123,7 @@ const createRuntimeProfile = (companion: PlaygroundCompanion): CompanionProfile 
   return createCompanionProfile({
     id: companion.id,
     name: companion.name,
-    description: companion.description ?? `${companion.category} companion for mock playground testing.`,
+    description: companion.description ?? `${companion.category} companion for playground testing.`,
     category: normalizeCategory(companion.category),
     role: `${companion.category} companion`,
     tone: getMockTone(companion.category),
@@ -167,13 +169,13 @@ const createInitialMessages = (companion: PlaygroundCompanion): ChatMessage[] =>
       role: "assistant",
       content:
         companion.source === "local"
-          ? `Using your saved local profile for ${companion.name}, I would check the current scene against its configured role, tone, memory categories, and guardrails. (Mock response — no real model call.)`
-          : "Based on the companion profile and the context provided, I'd focus this companion on concise, context-aware guidance. The current rule set is clear, but you may want to add one guardrail about not inventing missing project facts.",
+          ? `Using your saved local profile for ${companion.name}, I would check the current scene against its configured role, tone, memory categories, and guardrails. (Starter message — send a message to use the runtime.)`
+          : "Based on the companion profile and the context provided, I'd focus this companion on concise, context-aware guidance. Send a message to use the runtime.",
     },
   ];
 };
 
-const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket => {
+const createMockContextPacket = (companion: PlaygroundCompanion, runtimeMode: RuntimeModeSelection): ContextPacket => {
   const rules = getCompanionRules(companion);
   const memoryLabels = getCompanionMemoryLabels(companion);
   const persona = companion.profile?.persona;
@@ -210,8 +212,8 @@ const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket 
         label: "Project facts",
         content:
           companion.source === "local"
-            ? "This playground is using a saved local Builder profile. No backend, auth, database, or model call is active yet."
-            : "This is a UI-only preview. No backend, auth, database, or model call is active yet.",
+            ? "This playground is using a saved local Builder profile. No backend, auth, database, or account sync is active yet."
+            : "This is a UI-only preview. No backend, auth, database, or account sync is active yet.",
         priority: "high",
         source: companion.source === "local" ? "local-builder-draft" : "mock-playground",
       },
@@ -241,9 +243,12 @@ const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket 
     ],
     warnings: [
       {
-        id: "mock-runtime",
+        id: "runtime-mode",
         level: "info",
-        message: "Runtime currently uses the mock API route. No provider key is required yet.",
+        message:
+          runtimeMode === "live"
+            ? "Runtime is set to live OpenAI mode. OPENAI_API_KEY must be configured server-side."
+            : "Runtime is set to mock mode. No provider key is required.",
       },
       {
         id: companion.source === "local" ? "local-draft" : "local-context",
@@ -255,7 +260,7 @@ const createMockContextPacket = (companion: PlaygroundCompanion): ContextPacket 
       },
     ],
     metadata: {
-      runtimeMode: "mock",
+      runtimeMode,
       source: "playground-preview",
       selectedCompanion: companion.name,
       companionSource: companion.source,
@@ -288,6 +293,7 @@ const Playground = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => createInitialMessages(mockCompanionOptions[0]));
   const [draft, setDraft] = useState("");
   const [loadNotice, setLoadNotice] = useState<string | null>(null);
+  const [runtimeMode, setRuntimeMode] = useState<RuntimeModeSelection>("mock");
   const [isSending, setIsSending] = useState(false);
   const [runtimeResult, setRuntimeResult] = useState<CompanionRuntimeResponse | null>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
@@ -298,7 +304,7 @@ const Playground = () => {
     [localCompanion],
   );
 
-  const contextPacket = useMemo(() => createMockContextPacket(selected), [selected]);
+  const contextPacket = useMemo(() => createMockContextPacket(selected, runtimeMode), [selected, runtimeMode]);
   const contextValidation = validateContextPacket(contextPacket);
   const contextJson = stringifyContextPacket(contextPacket);
 
@@ -349,8 +355,8 @@ const Playground = () => {
           contextPacket,
           message: userMsg.content,
           history: messages.filter((message) => message.role !== "system"),
-          mode: "mock",
-          provider: "mock",
+          mode: runtimeMode,
+          provider: runtimeMode === "live" ? "openai" : "mock",
         }),
       });
 
@@ -412,6 +418,12 @@ const Playground = () => {
     setOpen(false);
   };
 
+  const switchRuntimeMode = (nextMode: RuntimeModeSelection) => {
+    setRuntimeMode(nextMode);
+    setRuntimeResult(null);
+    setRuntimeError(null);
+  };
+
   return (
     <AppShell>
       <div data-testid="playground-page" className="space-y-6">
@@ -422,7 +434,7 @@ const Playground = () => {
               Test the companion before anyone else does.
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-              Messages now go through the reusable mock runtime API with profile + context packet + user input.
+              Messages go through the reusable runtime API with profile + context packet + user input.
             </p>
             {loadNotice && (
               <p className="mt-2 text-xs text-muted-foreground" data-testid="playground-load-notice">
@@ -432,6 +444,28 @@ const Playground = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-full border border-border bg-white p-1" data-testid="runtime-mode-toggle">
+              <button
+                type="button"
+                onClick={() => switchRuntimeMode("mock")}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  runtimeMode === "mock" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="runtime-mode-mock"
+              >
+                Mock
+              </button>
+              <button
+                type="button"
+                onClick={() => switchRuntimeMode("live")}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  runtimeMode === "live" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="runtime-mode-live"
+              >
+                Live OpenAI
+              </button>
+            </div>
             <button
               type="button"
               onClick={reset}
@@ -450,6 +484,18 @@ const Playground = () => {
             </button>
           </div>
         </div>
+
+        {runtimeMode === "live" && (
+          <div className="rounded-2xl border border-accent-ochre/50 bg-accent-ochre/10 px-5 py-4 flex items-start gap-3" data-testid="live-mode-notice">
+            <Info className="h-5 w-5 text-accent-ochre shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold">Live mode uses your server-side OpenAI key</p>
+              <p className="text-sm text-muted-foreground">
+                Add OPENAI_API_KEY to .env.local and restart the dev server. The key is never sent to the browser.
+              </p>
+            </div>
+          </div>
+        )}
 
         {runtimeError && (
           <div className="rounded-2xl border border-secondary/40 bg-secondary/10 px-5 py-4 flex items-start gap-3" data-testid="runtime-error">
@@ -513,8 +559,8 @@ const Playground = () => {
                   </div>
                 )}
               </div>
-              <Badge tone={selected.source === "local" ? "sage" : "neutral"} data-testid="playground-status">
-                {selected.status}
+              <Badge tone={runtimeMode === "live" ? "sage" : selected.source === "local" ? "sage" : "neutral"} data-testid="playground-status">
+                {runtimeMode === "live" ? "LIVE" : selected.status}
               </Badge>
             </div>
 
@@ -588,7 +634,9 @@ const Playground = () => {
                 </button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Mock runtime only — no API key required yet. Future live mode will use the same request contract.
+                {runtimeMode === "live"
+                  ? "Live OpenAI mode — requires OPENAI_API_KEY server-side."
+                  : "Mock runtime mode — no API key required."}
               </p>
             </div>
           </div>
@@ -601,7 +649,7 @@ const Playground = () => {
                   <span>
                     <span className="block font-medium">Mode</span>
                     <span className="text-muted-foreground text-xs">
-                      {runtimeResult ? `${runtimeResult.mode} / ${runtimeResult.provider}` : "Waiting for first runtime call"}
+                      {runtimeResult ? `${runtimeResult.mode} / ${runtimeResult.provider}` : `${runtimeMode} / ${runtimeMode === "live" ? "openai" : "mock"}`}
                     </span>
                   </span>
                 </li>
@@ -611,7 +659,7 @@ const Playground = () => {
                     <span className="block font-medium">Estimated usage</span>
                     <span className="text-muted-foreground text-xs">
                       {runtimeResult
-                        ? `${runtimeResult.usage.estimatedPromptTokens} prompt tokens · ${runtimeResult.usage.estimatedResponseTokens} response tokens`
+                        ? `${runtimeResult.usage.estimatedPromptTokens} prompt tokens · ${runtimeResult.usage.estimatedResponseTokens} response tokens${runtimeResult.usage.model ? ` · ${runtimeResult.usage.model}` : ""}`
                         : "No usage yet"}
                     </span>
                   </span>
@@ -677,7 +725,7 @@ const Playground = () => {
                 ))}
                 <li className="flex items-start gap-2">
                   <FileJson className="h-3.5 w-3.5 mt-0.5" />
-                  Runtime API is wired in mock mode. Live provider adapter comes next.
+                  Runtime API supports mock and live OpenAI mode.
                 </li>
               </ul>
             </SectionCard>
