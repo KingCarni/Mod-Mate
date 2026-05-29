@@ -19,7 +19,7 @@ import {
 import MarketingHeader from "@/components/layout/MarketingHeader";
 import Badge from "@/components/mate/Badge";
 import TemplateCard from "@/components/mate/TemplateCard";
-import { templates, useCases, howItWorks, integrations } from "@/data/mockData";
+import { templates, useCases, workflowSteps as howItWorks, integrations } from "@/data/mockData";
 
 const ICONS = {
   feather: Feather,
@@ -205,11 +205,11 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {howItWorks.map((s, idx) => (
               <div
-                key={s.step}
+                key={s.id}
                 className="rounded-2xl bg-primary-foreground/5 border border-primary-foreground/10 p-6"
                 data-testid={`how-step-${idx + 1}`}
               >
-                <p className="font-mono text-xs text-primary-foreground/60">{s.step}</p>
+                <p className="font-mono text-xs text-primary-foreground/60">Step {idx + 1}</p>
                 <h3 className="font-heading text-xl font-medium mt-2">{s.title}</h3>
                 <p className="text-sm text-primary-foreground/70 mt-2 leading-relaxed">{s.body}</p>
               </div>

@@ -23,7 +23,7 @@ type NavLinkProps = Omit<LinkProps, "className"> & {
 };
 
 export function NavLink({ to, href, className, children, ...props }: NavLinkProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const target = href || to || "#";
   const isActive = target === "/" ? pathname === "/" : pathname.startsWith(target);
   const resolvedClassName = typeof className === "function" ? className({ isActive }) : className;
@@ -36,6 +36,6 @@ export function NavLink({ to, href, className, children, ...props }: NavLinkProp
 }
 
 export function useLocation() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   return { pathname };
 }

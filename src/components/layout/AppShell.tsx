@@ -24,9 +24,9 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
-const AppShell = ({ children }) => {
+const AppShell = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const active = NAV.find((n) => location.pathname.startsWith(n.to));
+  const active = NAV.find((n) => (location.pathname ?? "").startsWith(n.to));
 
   return (
     <div className="min-h-screen flex bg-background" data-testid="app-shell">

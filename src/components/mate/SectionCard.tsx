@@ -2,11 +2,24 @@
 
 import React from "react";
 
-const SectionCard = ({ eyebrow, title, description, children, action, testId }) => (
-  <section
-    className="surface-card p-7 md:p-8"
-    data-testid={testId}
-  >
+type SectionCardProps = {
+  eyebrow?: React.ReactNode;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  children?: React.ReactNode;
+  action?: React.ReactNode;
+  testId?: string;
+};
+
+const SectionCard = ({
+  eyebrow,
+  title,
+  description,
+  children,
+  action,
+  testId,
+}: SectionCardProps) => (
+  <section className="surface-card p-7 md:p-8" data-testid={testId}>
     <div className="flex items-start justify-between gap-4 mb-5">
       <div>
         {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}

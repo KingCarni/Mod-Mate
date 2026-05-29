@@ -1,5 +1,28 @@
 // Mock data for Mod-Mate UI shell. No backend wiring.
 
+export type TemplateMaturity = "Ready" | "Template" | "Concept" | "Coming Soon";
+export type TemplateVisibility = "public" | "internal";
+export type TemplateBg = "sage" | "ochre" | "terracotta" | "primary";
+export type TemplateImageStyle = "logo" | "photo";
+
+export type Template = {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  bg: TemplateBg;
+  image?: string;
+  imageStyle?: TemplateImageStyle;
+  icon?: string;
+  tag?: string;
+  maturity?: TemplateMaturity;
+  visibility?: TemplateVisibility;
+  starterPrompt?: string;
+  memoryPreview?: string[];
+  guardrailPreview?: string[];
+  actionPreview?: string[];
+};
+
 export const companions = [
   {
     id: "draftmate",
@@ -100,7 +123,7 @@ const BRIEFCASE_IMG = "https://static.prod-images.emergentagent.com/jobs/738a68c
 const QATALYST_LOGO = "https://customer-assets.emergentagent.com/job_template-showcase-33/artifacts/vja66sie_qatalyst-logo.png";
 const MASTER_DRAFT_LOGO = "https://customer-assets.emergentagent.com/job_template-showcase-33/artifacts/00gi937j_master-draft-logo.png";
 
-export const templates = [
+export const templates: Template[] = [
   {
     id: "screenplay",
     title: "Build a screenplay companion",
