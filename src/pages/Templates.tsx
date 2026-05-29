@@ -16,6 +16,12 @@ import {
 
 type Template = (typeof templates)[number];
 
+const showInternalTemplates = process.env.NODE_ENV !== "production";
+
+const visibleTemplates = templates.filter((template) => {
+  return showInternalTemplates || template.visibility !== "internal";
+});
+
 const maturityCopy = [
   { label: "Ready", body: "Has a full companion profile wired into Builder and Playground.", tone: "sage" },
   { label: "Template", body: "Good starter shape; may still need project-specific tuning.", tone: "primary" },
@@ -32,13 +38,13 @@ const Templates = () => {
 
   const featuredTemplates = useMemo(
     () => featuredTemplateIds
-      .map((id) => templates.find((template) => template.id === id))
+      .map((id) => visibleTemplates.find((template) => template.id === id))
       .filter(Boolean) as Template[],
     [],
   );
 
   const filtered = useMemo(() => {
-    return templates.filter((t) => {
+    return visibleTemplates.filter((t) => {
       const matchCat = active === "All" || t.category === active;
       const haystack = [
         t.title,
@@ -60,16 +66,22 @@ const Templates = () => {
   }, [active, query]);
 
   const selectedPreview = useMemo(() => {
-    return templates.find((template) => template.id === previewTemplateId) ?? featuredTemplates[0] ?? templates[0];
+    return visibleTemplates.find((template) => template.id === previewTemplateId) ?? featuredTemplates[0] ?? visibleTemplates[0];
   }, [featuredTemplates, previewTemplateId]);
 
   const useTemplate = (templateId: string) => {
+    const selectedTemplate = visibleTemplates.find((t) => t.id === templateId);
+
+    if (!selectedTemplate) {
+      setTemplateNotice("This template is not available in the current workspace.");
+      return;
+    }
+
     const profileTemplate = getCompanionProfileTemplate(templateId);
 
     if (!profileTemplate) {
-      const template = templates.find((t) => t.id === templateId);
       setTemplateNotice(
-        `${template?.title ?? "This template"} is a discovery preview. A full Builder profile has not been added yet.`,
+        `${selectedTemplate.title} is a discovery preview. A full Builder profile has not been added yet.`,
       );
       setPreviewTemplateId(templateId);
       return;
@@ -204,14 +216,13 @@ const Templates = () => {
         </div>
 
         <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-[minmax(260px,_auto)]"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-[minmax(300px,_auto)]"
           data-testid="templates-grid"
         >
-          {filtered.map((t, i) => (
+          {filtered.map((t) => (
             <TemplateCard
               key={t.id}
               template={t}
-              featured={i === 0 && filtered.length > 3 && active === "All" && !query}
               onUseTemplate={useTemplate}
               onPreviewTemplate={previewTemplate}
             />
