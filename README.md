@@ -69,6 +69,18 @@ Production-style starter templates currently include:
 
 Both can be loaded from `/templates`, edited in `/builder`, and tested in `/playground`.
 
+## Product docs
+
+Product planning docs live in:
+
+```txt
+docs/product/
+```
+
+Current product docs:
+
+- `docs/product/template-discovery-categories.md` — companion template discovery categories and public-facing label guidance
+
 ## Integration contracts
 
 Integration planning docs live in:
