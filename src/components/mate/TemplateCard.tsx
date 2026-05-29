@@ -41,6 +41,9 @@ type TemplateCardProps = {
 const TemplateCard = ({ template, featured = false, onUseTemplate, onPreviewTemplate }: TemplateCardProps) => {
   const bg = BGS[template.bg as keyof typeof BGS] || BGS.sage;
   const maturityTone = template.maturity ? MATURITY_TONES[template.maturity] : "neutral";
+  const promptPillWidth = template.image
+    ? "w-fit max-w-[15rem] sm:max-w-[17rem] lg:max-w-[16rem]"
+    : "w-fit max-w-[min(100%,26rem)]";
 
   return (
     <article
@@ -74,7 +77,9 @@ const TemplateCard = ({ template, featured = false, onUseTemplate, onPreviewTemp
           </h3>
           <p className="text-sm text-primary/70 mt-2 max-w-md">{template.description}</p>
           {template.starterPrompt && (
-            <p className="mt-4 text-xs text-primary/70 bg-white/45 border border-white/50 rounded-2xl px-3 py-2 max-w-md">
+            <p
+              className={`mt-4 inline-block ${promptPillWidth} text-xs leading-snug text-primary/70 bg-white/55 border border-white/60 rounded-2xl px-3 py-2 break-words whitespace-normal`}
+            >
               “{template.starterPrompt}”
             </p>
           )}
