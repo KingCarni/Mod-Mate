@@ -149,6 +149,51 @@
         mix-blend-mode: multiply;
         background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
     }
+    .dark .grain::after {
+        opacity: 0.045;
+        mix-blend-mode: soft-light;
+    }
+    .dark .surface-card,
+    .dark .bg-white,
+    .dark [class*="bg-white/"] {
+        background-color: hsl(var(--card)) !important;
+        color: hsl(var(--card-foreground)) !important;
+    }
+    .dark .border-white,
+    .dark [class*="border-white/"] {
+        border-color: hsl(var(--border)) !important;
+    }
+    .dark input.bg-white,
+    .dark textarea.bg-white,
+    .dark select.bg-white,
+    .dark input[class*="bg-white/"],
+    .dark textarea[class*="bg-white/"],
+    .dark select[class*="bg-white/"] {
+        background-color: hsl(var(--card)) !important;
+        color: hsl(var(--foreground)) !important;
+    }
+    .dark input::placeholder,
+    .dark textarea::placeholder {
+        color: hsl(var(--muted-foreground)) !important;
+    }
+    .dark button.bg-white,
+    .dark a.bg-white,
+    .dark [role="button"].bg-white,
+    .dark button[class*="bg-white/"],
+    .dark a[class*="bg-white/"],
+    .dark [role="button"][class*="bg-white/"] {
+        background-color: hsl(var(--card)) !important;
+        color: hsl(var(--foreground)) !important;
+        border-color: hsl(var(--border)) !important;
+    }
+    .dark button.bg-white:hover,
+    .dark a.bg-white:hover,
+    .dark [role="button"].bg-white:hover,
+    .dark button[class*="bg-white/"]:hover,
+    .dark a[class*="bg-white/"]:hover,
+    .dark [role="button"][class*="bg-white/"]:hover {
+        background-color: hsl(var(--muted)) !important;
+    }
     .marquee {
         animation: marquee 40s linear infinite;
     }
