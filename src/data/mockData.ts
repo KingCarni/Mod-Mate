@@ -4,7 +4,7 @@ export const companions = [
   {
     id: "draftmate",
     name: "DraftMate",
-    category: "Creative Writing",
+    category: "Writing & Story",
     description:
       "Screenplay & story companion. Tracks beats, characters, and tone across drafts.",
     status: "Ready",
@@ -26,7 +26,7 @@ export const companions = [
   {
     id: "gm-mate",
     name: "GM-Mate",
-    category: "Tabletop RPG",
+    category: "Characters & Worlds",
     description:
       "Game-master assistant. Remembers party, NPCs, lore, and campaign clocks.",
     status: "Ready",
@@ -59,7 +59,7 @@ export const companions = [
   {
     id: "lore-keeper",
     name: "Lore Keeper",
-    category: "Character & Roleplay",
+    category: "Characters & Worlds",
     description:
       "Character companion that holds world facts, voice, and continuity over time.",
     status: "Template",
@@ -85,25 +85,29 @@ export const recentActivity = [
 
 export const templateCategories = [
   "All",
-  "Creative Writing",
+  "Writing & Story",
   "QA & Product",
   "Game Design",
-  "Tabletop RPG",
   "Support & Onboarding",
-  "Character & Roleplay",
   "Business Workflow",
+  "Characters & Worlds",
+  "Docs & Knowledge",
 ];
 
 export const templates = [
   {
-    id: "master-draft-story",
-    title: "Master Draft story companion",
-    category: "Creative Writing",
-    description:
-      "Production-style screenplay companion for story analysis, continuity, pitch clarity, and visual development notes.",
+    id: "screenplay",
+    title: "Build a screenplay companion",
+    category: "Writing & Story",
+    description: "A companion that tracks beats, characters, and tone across long drafts.",
     bg: "ochre",
     image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
-    tag: "MOD-14",
+    tag: "Featured",
+    maturity: "Concept",
+    starterPrompt: "Does this scene match the tone, character voice, and story promise?",
+    memoryPreview: ["Characters", "Story beats", "Tone notes"],
+    guardrailPreview: ["Do not invent canon", "Ask for missing context", "Flag continuity risks"],
+    actionPreview: ["Analyze scene", "Suggest revision", "Rewrite on request"],
   },
   {
     id: "qatalyst-qa-lead",
@@ -112,16 +116,27 @@ export const templates = [
     description:
       "Production-style QA companion for triage, risk review, coverage gaps, release readiness, and workflow-specific quality guidance.",
     bg: "sage",
-    tag: "MOD-15",
+    tag: "Proof integration",
+    maturity: "Ready",
+    starterPrompt: "What risks should I flag and what coverage should I suggest?",
+    memoryPreview: ["Project Brain", "QA rules", "Risk register", "Jira/TestRail state"],
+    guardrailPreview: ["Do not invent test evidence", "Separate facts from assumptions", "Respect integration state"],
+    actionPreview: ["Triage bug", "Plan coverage", "Draft Jira comment"],
   },
   {
-    id: "screenplay",
-    title: "Build a screenplay companion",
-    category: "Creative Writing",
-    description: "A companion that tracks beats, characters, and tone across long drafts.",
+    id: "master-draft-story",
+    title: "Master Draft story companion",
+    category: "Writing & Story",
+    description:
+      "Production-style screenplay companion for story analysis, continuity, pitch clarity, and visual development notes.",
     bg: "ochre",
     image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
-    tag: "Featured",
+    tag: "Proof integration",
+    maturity: "Ready",
+    starterPrompt: "Does this selected line break canon, or does it create a strong enough first-compromise moment?",
+    memoryPreview: ["Story Bible", "Characters", "Canon facts", "Never Break rules"],
+    guardrailPreview: ["Respect Never Break rules", "Do not invent story facts", "Mark uncertainty clearly"],
+    actionPreview: ["Analyze scene", "Check continuity", "Suggest revision"],
   },
   {
     id: "qa-triage",
@@ -130,15 +145,11 @@ export const templates = [
     description: "Cluster bugs by root cause, propose repro steps, and explain regressions.",
     bg: "sage",
     tag: "Popular",
-  },
-  {
-    id: "gm-assistant",
-    title: "Design a tabletop GM assistant",
-    category: "Tabletop RPG",
-    description: "Remember party state, NPC voices, and campaign clocks between sessions.",
-    bg: "terracotta",
-    image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/2d35c4f2a5070a4a8e5b2e6d12f2e0f1b0aed32187cf92ac948b142571b0b0f2.png",
-    tag: "New",
+    maturity: "Template",
+    starterPrompt: "What is missing from this bug report before it is ready for development?",
+    memoryPreview: ["Bug history", "QA rules", "Risk areas"],
+    guardrailPreview: ["Call out unknowns", "Do not invent repro steps", "Prioritize user impact"],
+    actionPreview: ["Suggest repro steps", "Group risks", "Draft triage notes"],
   },
   {
     id: "game-economy",
@@ -146,23 +157,52 @@ export const templates = [
     category: "Game Design",
     description: "Read your gameplay loops and suggest balance tweaks with clear reasoning.",
     bg: "primary",
-    tag: "Concept",
-  },
-  {
-    id: "character-memory",
-    title: "Create characters that remember",
-    category: "Character & Roleplay",
-    description: "Long-running character companions with memory categories you control.",
-    bg: "ochre",
     tag: "Featured",
+    maturity: "Concept",
+    starterPrompt: "Where is this economy loop likely to break after day three?",
+    memoryPreview: ["Currencies", "Loops", "Progression gates"],
+    guardrailPreview: ["Explain assumptions", "Avoid unsafe nerfs", "Protect player motivation"],
+    actionPreview: ["Find bottlenecks", "Suggest rebalances", "Flag exploit loops"],
   },
   {
     id: "docs-to-support",
     title: "Turn docs into a support companion",
-    category: "Support & Onboarding",
+    category: "Docs & Knowledge",
     description: "Point a companion at your documentation and let it answer real user questions.",
     bg: "sage",
     tag: "New",
+    maturity: "Template",
+    starterPrompt: "How would this user solve their setup issue from our docs?",
+    memoryPreview: ["Product docs", "Known issues", "Support tone"],
+    guardrailPreview: ["Answer from sources", "Ask for missing context", "Do not expose private notes"],
+    actionPreview: ["Summarize answer", "Draft support reply", "Flag doc gaps"],
+  },
+  {
+    id: "character-memory",
+    title: "Create characters that remember",
+    category: "Characters & Worlds",
+    description: "Long-running character companions with memory categories you control.",
+    bg: "ochre",
+    tag: "Featured",
+    maturity: "Concept",
+    starterPrompt: "What should this character remember about our last scene together?",
+    memoryPreview: ["Backstory", "Voice", "Relationship notes", "World rules"],
+    guardrailPreview: ["Stay in character", "Respect world rules", "Keep boundaries clear"],
+    actionPreview: ["Continue scene", "Summarize memory", "Suggest relationship beats"],
+  },
+  {
+    id: "gm-assistant",
+    title: "Design a tabletop GM assistant",
+    category: "Characters & Worlds",
+    description: "Remember party state, NPC voices, and campaign clocks between sessions.",
+    bg: "terracotta",
+    image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/2d35c4f2a5070a4a8e5b2e6d12f2e0f1b0aed32187cf92ac948b142571b0b0f2.png",
+    tag: "New",
+    maturity: "Concept",
+    starterPrompt: "What did the party leave unresolved last session?",
+    memoryPreview: ["Party state", "NPCs", "Locations", "Session clocks"],
+    guardrailPreview: ["Do not retcon canon", "Ask before major reveals", "Track open threads"],
+    actionPreview: ["Prep next scene", "Recall NPC voice", "Summarize session"],
   },
   {
     id: "in-product-help",
@@ -172,6 +212,11 @@ export const templates = [
     bg: "terracotta",
     image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/62258c8504fc1c6292f4fc093b2d8f1a4f03230a0109cf36cd3da556b61a47f3.png",
     tag: "Popular",
+    maturity: "Coming Soon",
+    starterPrompt: "What should I do next on this screen?",
+    memoryPreview: ["Screen context", "Docs", "User goal"],
+    guardrailPreview: ["Avoid hidden actions", "Use current screen first", "Escalate unclear cases"],
+    actionPreview: ["Explain screen", "Suggest next step", "Open docs"],
   },
   {
     id: "team-workflow-assistant",
@@ -180,16 +225,23 @@ export const templates = [
     description: "A shared assistant that learns your team's vocabulary, rituals, and checklists.",
     bg: "primary",
     tag: "Concept",
+    maturity: "Concept",
+    starterPrompt: "What is the next best handoff note for this project?",
+    memoryPreview: ["SOPs", "Decisions", "Team vocabulary"],
+    guardrailPreview: ["Keep private data out", "Confirm before writes", "Separate tasks from context"],
+    actionPreview: ["Draft handoff", "Summarize decisions", "Create checklist"],
   },
 ];
 
+export const featuredTemplateIds = ["screenplay", "qatalyst-qa-lead", "game-economy"];
+
 export const futureConcepts = [
-  { id: "act-out", title: "Characters that act out your ideas", note: "Future concept" },
-  { id: "story-continues", title: "Stories that continue with you", note: "Future concept" },
-  { id: "playable-books", title: "Books you can play through", note: "Future concept" },
-  { id: "full-cast", title: "Full-cast audio-style companions", note: "Future concept" },
-  { id: "story-chat", title: "Chats reimagined as story scenes", note: "Future concept" },
-  { id: "fandom-live", title: "Fandom-style live discussion companions", note: "Future concept" },
+  { id: "act-out", title: "Scene Studio Companion", note: "Demo concept" },
+  { id: "story-continues", title: "Interactive Storyworld Companion", note: "Later" },
+  { id: "playable-books", title: "Playable Reading Companion", note: "Later" },
+  { id: "full-cast", title: "Audio Drama Companion", note: "Demo concept" },
+  { id: "story-chat", title: "Chat-to-Story Companion", note: "MVP/Demo" },
+  { id: "fandom-live", title: "Fandom Guide Companion", note: "Later" },
 ];
 
 export const integrations = [
@@ -320,37 +372,21 @@ export const useCases = [
   },
   {
     id: "support",
-    title: "Customer support",
-    body: "In-product companion grounded in your docs.",
-    icon: "lifebuoy",
+    title: "Onboarding & workflow",
+    body: "Walk users through your product with context-aware help.",
+    icon: "compass",
   },
   {
-    id: "onboarding",
-    title: "Onboarding & workflows",
-    body: "Walk users through your product, step by step.",
-    icon: "compass",
+    id: "world",
+    title: "Worldbuilding memory",
+    body: "Keep lore, rules, and relationships consistent.",
+    icon: "globe",
   },
 ];
 
-export const howItWorks = [
-  {
-    step: "01",
-    title: "Describe the companion",
-    body: "Name, role, tone, and where it lives. Pick a starting template or begin blank.",
-  },
-  {
-    step: "02",
-    title: "Set rules & memory",
-    body: "Add guardrails, decide what it remembers, and choose which actions it can take.",
-  },
-  {
-    step: "03",
-    title: "Test in the playground",
-    body: "Talk to it, watch the context packet, and refine the persona live.",
-  },
-  {
-    step: "04",
-    title: "Plug it into your product",
-    body: "Embed via the React widget or Custom API contract when you're ready.",
-  },
+export const workflowSteps = [
+  { id: 1, title: "Describe the companion", body: "Name, role, tone, and where it lives. Pick a starting template or begin blank." },
+  { id: 2, title: "Set rules & memory", body: "Add guardrails, decide what it remembers, and choose which actions it can take." },
+  { id: 3, title: "Test in the playground", body: "Talk to it, switch context packets, and refine the persona live." },
+  { id: 4, title: "Plug into your app", body: "Embed into your workflow via React, API, or custom host when ready." },
 ];
