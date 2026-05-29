@@ -5,6 +5,7 @@ import {
   companionStatuses,
   companionTones,
   type CompanionAction,
+  type CompanionAvatar,
   type CompanionCategory,
   type CompanionContextRule,
   type CompanionMemoryCategory,
@@ -17,6 +18,9 @@ import {
 
 const isString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
+
+const isOptionalString = (value: unknown): value is string | undefined =>
+  value === undefined || typeof value === "string";
 
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(isString);
@@ -78,6 +82,26 @@ const validateContextRule = (value: unknown, index: number, errors: string[]): v
   return errors.length === 0;
 };
 
+const validateAvatar = (value: unknown, errors: string[]): value is CompanionAvatar | undefined => {
+  if (value === undefined) return true;
+  if (!value || typeof value !== "object") {
+    errors.push("avatar must be an object when provided.");
+    return false;
+  }
+
+  const candidate = value as Partial<CompanionAvatar>;
+  if (!isOptionalString(candidate.imageUrl)) errors.push("avatar.imageUrl must be a string when provided.");
+  if (!isOptionalString(candidate.prompt)) errors.push("avatar.prompt must be a string when provided.");
+  if (candidate.source !== undefined && !includesValue(["default", "uploaded", "generated"] as const, candidate.source)) {
+    errors.push("avatar.source is invalid.");
+  }
+  if (candidate.generatedAt !== undefined && !isIsoDateLike(candidate.generatedAt)) {
+    errors.push("avatar.generatedAt must be an ISO date string when provided.");
+  }
+
+  return true;
+};
+
 export const createSlugId = (value: string): string =>
   value
     .trim()
@@ -97,6 +121,7 @@ export const createCompanionProfile = (input: {
   allowedActions: CompanionAction[];
   contextRules?: CompanionContextRule[];
   status?: CompanionStatus;
+  avatar?: CompanionAvatar;
   id?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -111,6 +136,7 @@ export const createCompanionProfile = (input: {
     description: input.description,
     category: input.category,
     status: input.status ?? "Draft",
+    avatar: input.avatar,
     persona: {
       role: input.role,
       tone: input.tone,
@@ -142,6 +168,8 @@ export const validateCompanionProfile = (value: unknown): CompanionProfileValida
   if (!isString(candidate.description)) errors.push("description is required.");
   if (!includesValue(companionCategories, candidate.category)) errors.push("category is invalid.");
   if (!includesValue(companionStatuses, candidate.status)) errors.push("status is invalid.");
+
+  validateAvatar(candidate.avatar, errors);
 
   if (!candidate.persona || typeof candidate.persona !== "object") {
     errors.push("persona is required.");
