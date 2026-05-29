@@ -5,10 +5,22 @@ import {
   createIntegrationActionHint,
   toContextActionHint,
 } from "@/lib/integrations";
+import { qatalystCompanionProfile } from "@/lib/companionProfileTemplates";
+import type {
+  CompanionRuntimeMode,
+  CompanionRuntimeProvider,
+  CompanionRuntimeRequest,
+} from "@/types/companionRuntime";
 import type { ContextPacket } from "@/types/contextPacket";
 import type { EmbedConfig, IntegrationActionHint } from "@/types/integration";
 
 const SAMPLE_CREATED_AT = "2026-01-01T00:00:00.000Z";
+
+export const QATALYST_INTEGRATION_ID = "qatalyst";
+export const QATALYST_SAMPLE_PROJECT_ID = "qat-project-sample";
+export const QATALYST_SAMPLE_COMPANION_ID = "qatalyst-qa-lead-companion";
+export const QATALYST_SAMPLE_USER_MESSAGE =
+  "What risks should I flag, what coverage gaps exist, and what should I ask for before this bug is ready for development?";
 
 export const createQatalystSampleActionHints = (): IntegrationActionHint[] => [
   createIntegrationActionHint({
@@ -19,6 +31,8 @@ export const createQatalystSampleActionHints = (): IntegrationActionHint[] => [
     requiresConfirmation: true,
     payload: {
       target: "generatedOutput",
+      hostApp: QATALYST_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
   createIntegrationActionHint({
@@ -29,6 +43,8 @@ export const createQatalystSampleActionHints = (): IntegrationActionHint[] => [
     requiresConfirmation: true,
     payload: {
       targetMemorySection: "project-brain",
+      hostApp: QATALYST_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
   createIntegrationActionHint({
@@ -39,6 +55,8 @@ export const createQatalystSampleActionHints = (): IntegrationActionHint[] => [
     requiresConfirmation: true,
     payload: {
       target: "jira-comment-draft",
+      hostApp: QATALYST_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
   createIntegrationActionHint({
@@ -49,6 +67,8 @@ export const createQatalystSampleActionHints = (): IntegrationActionHint[] => [
     requiresConfirmation: true,
     payload: {
       target: "jira-issue",
+      hostApp: QATALYST_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
   createIntegrationActionHint({
@@ -59,6 +79,8 @@ export const createQatalystSampleActionHints = (): IntegrationActionHint[] => [
     requiresConfirmation: true,
     payload: {
       target: "testrail-cases",
+      hostApp: QATALYST_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
 ];
@@ -73,7 +95,7 @@ export const createQatalystSampleContextPacket = (): ContextPacket => {
       version: "0.1.0",
       environment: "local",
     }),
-    projectId: "qat-project-sample",
+    projectId: QATALYST_SAMPLE_PROJECT_ID,
     activeTool: "bug-triage",
     currentScreenContext:
       "User is triaging a checkout discount-code bug. Jira is connected and TestRail is not connected.",
@@ -88,6 +110,8 @@ export const createQatalystSampleContextPacket = (): ContextPacket => {
         severity: "unknown",
         reproStepsProvided: false,
         source: "user-input",
+        expectedResultProvided: false,
+        actualResultProvided: false,
       },
     },
     memorySections: [
@@ -95,7 +119,7 @@ export const createQatalystSampleContextPacket = (): ContextPacket => {
         id: "workflow-context",
         label: "Workflow context",
         content:
-          "Bug triage workflow. Missing repro steps, browser/device details, user scope, logs, and expected/actual result.",
+          "Bug triage workflow. Missing repro steps, browser/device details, user scope, logs, frequency, expected result, and actual result.",
         priority: "high",
         source: "qatalyst-active-workflow",
       },
@@ -110,7 +134,7 @@ export const createQatalystSampleContextPacket = (): ContextPacket => {
         id: "generated-output",
         label: "Generated output",
         content:
-          "Initial triage output is incomplete because the report lacks reproduction steps, frequency, expected result, actual result, environment, and logs.",
+          "Initial triage output is incomplete because the report lacks reproduction steps, frequency, expected result, actual result, environment, logs, and impacted discount-code examples.",
         priority: "normal",
         source: "qatalyst-generated-output",
       },
@@ -118,23 +142,39 @@ export const createQatalystSampleContextPacket = (): ContextPacket => {
         id: "project-brain",
         label: "Project Brain",
         content:
-          "Checkout and discount logic are high-risk release areas. Previous incidents have involved promo stacking, expired codes, and payment provider handoff issues.",
+          "Checkout and discount logic are high-risk release areas. Previous incidents have involved promo stacking, expired codes, minimum cart thresholds, and payment provider handoff issues.",
         priority: "high",
         source: "qatalyst-project-brain",
+      },
+      {
+        id: "source-vault",
+        label: "Source Vault",
+        content:
+          "Relevant source references may include checkout acceptance criteria, discount-code business rules, payment provider docs, and prior incident notes. No raw files are attached in this sample.",
+        priority: "normal",
+        source: "qatalyst-source-vault",
       },
       {
         id: "qa-rules",
         label: "QA rules",
         content:
-          "Do not mark a bug ready for development without repro steps or clear expected/actual behavior. Separate confirmed facts from assumptions.",
+          "Do not mark a bug ready for development without repro steps or clear expected/actual behavior. Separate confirmed facts from assumptions. Flag missing acceptance criteria and regression risk.",
         priority: "high",
         source: "qatalyst-qa-rules",
+      },
+      {
+        id: "terminology",
+        label: "Terminology",
+        content:
+          "Discount code means a promo or campaign code entered before payment. Checkout handoff means the step where cart total, discounts, tax, and payment provider state are reconciled.",
+        priority: "normal",
+        source: "qatalyst-terminology",
       },
       {
         id: "risk-register",
         label: "Risk register",
         content:
-          "Checkout failures are high business risk because they can block revenue and reduce trust. Discount code failures can impact campaigns and support volume.",
+          "Checkout failures are high business risk because they can block revenue and reduce trust. Discount-code failures can impact campaigns, support volume, analytics, and refund/manual-adjustment workflows.",
         priority: "high",
         source: "qatalyst-risk-register",
       },
@@ -164,7 +204,7 @@ export const createQatalystSampleContextPacket = (): ContextPacket => {
         id: "open-questions",
         label: "Open questions",
         content:
-          "Which discount code was used? Which browser/device? What payment method? How often does it fail? Is the failure before or after payment authorization?",
+          "Which discount code was used? Which browser/device? What payment method? How often does it fail? Is the failure before or after payment authorization? What exact error appears? Are logs available?",
         priority: "normal",
         source: "qatalyst-open-questions",
       },
@@ -180,11 +220,17 @@ export const createQatalystSampleContextPacket = (): ContextPacket => {
         level: "warning",
         message: "TestRail write actions should be disabled because TestRail is not connected in this sample.",
       },
+      {
+        id: "confirm-before-write",
+        level: "info",
+        message: "All Jira/TestRail/Project Brain actions are action hints only and require host-app confirmation.",
+      },
     ],
     metadata: {
-      hostApp: "qatalyst",
+      hostApp: QATALYST_INTEGRATION_ID,
       contractVersion: "0.1",
       sample: true,
+      adapter: "src/lib/integrationSamples/qatalystAdapter.ts",
     },
     actionHints: actionHints.map(toContextActionHint),
     createdAt: SAMPLE_CREATED_AT,
@@ -200,7 +246,7 @@ export const createQatalystSampleEmbedConfig = (): EmbedConfig =>
       environment: "local",
     }),
     surface: "side-panel",
-    companionProfileId: "qatalyst-qa-lead-companion",
+    companionProfileId: QATALYST_SAMPLE_COMPANION_ID,
     defaultRuntimeMode: "live",
     defaultProvider: "openai",
     allowHostActions: true,
@@ -213,3 +259,16 @@ export const createQatalystSampleEmbedConfig = (): EmbedConfig =>
     },
     debug: true,
   });
+
+export const createQatalystSampleRuntimeRequest = (options?: {
+  mode?: CompanionRuntimeMode;
+  provider?: CompanionRuntimeProvider;
+  message?: string;
+}): CompanionRuntimeRequest => ({
+  profile: qatalystCompanionProfile,
+  contextPacket: createQatalystSampleContextPacket(),
+  message: options?.message ?? QATALYST_SAMPLE_USER_MESSAGE,
+  history: [],
+  mode: options?.mode ?? "mock",
+  provider: options?.provider ?? "mock",
+});
