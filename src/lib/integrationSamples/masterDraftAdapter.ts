@@ -5,10 +5,22 @@ import {
   createIntegrationActionHint,
   toContextActionHint,
 } from "@/lib/integrations";
+import { masterDraftCompanionProfile } from "@/lib/companionProfileTemplates";
+import type {
+  CompanionRuntimeMode,
+  CompanionRuntimeProvider,
+  CompanionRuntimeRequest,
+} from "@/types/companionRuntime";
 import type { ContextPacket } from "@/types/contextPacket";
 import type { EmbedConfig, IntegrationActionHint } from "@/types/integration";
 
 const SAMPLE_CREATED_AT = "2026-01-01T00:00:00.000Z";
+
+export const MASTER_DRAFT_INTEGRATION_ID = "master-draft";
+export const MASTER_DRAFT_SAMPLE_PROJECT_ID = "md-project-sample";
+export const MASTER_DRAFT_SAMPLE_COMPANION_ID = "master-draft-story-companion";
+export const MASTER_DRAFT_SAMPLE_USER_MESSAGE =
+  "Does this selected line break canon, or does it create a strong enough first-compromise moment?";
 
 export const createMasterDraftSampleActionHints = (): IntegrationActionHint[] => [
   createIntegrationActionHint({
@@ -19,6 +31,8 @@ export const createMasterDraftSampleActionHints = (): IntegrationActionHint[] =>
     requiresConfirmation: true,
     payload: {
       target: "selectedText",
+      hostApp: MASTER_DRAFT_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
   createIntegrationActionHint({
@@ -29,6 +43,8 @@ export const createMasterDraftSampleActionHints = (): IntegrationActionHint[] =>
     requiresConfirmation: true,
     payload: {
       targetMemorySection: "story-bible",
+      hostApp: MASTER_DRAFT_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
   createIntegrationActionHint({
@@ -39,6 +55,8 @@ export const createMasterDraftSampleActionHints = (): IntegrationActionHint[] =>
     requiresConfirmation: true,
     payload: {
       target: "character-profile",
+      hostApp: MASTER_DRAFT_INTEGRATION_ID,
+      requiresConfirmation: true,
     },
   }),
 ];
@@ -53,7 +71,7 @@ export const createMasterDraftSampleContextPacket = (): ContextPacket => {
       version: "0.1.0",
       environment: "local",
     }),
-    projectId: "md-project-sample",
+    projectId: MASTER_DRAFT_SAMPLE_PROJECT_ID,
     activeTool: "script-editor",
     currentScreenContext:
       "User is editing Act 1 Scene 3 in the screenplay editor and has selected a line where Mara accepts a dangerous courier job.",
@@ -68,6 +86,7 @@ export const createMasterDraftSampleContextPacket = (): ContextPacket => {
         sceneNumber: 3,
         status: "draft",
         povCharacter: "Mara",
+        targetTone: "tense, restrained, transactional",
       },
     },
     memorySections: [
@@ -112,6 +131,14 @@ export const createMasterDraftSampleContextPacket = (): ContextPacket => {
         source: "master-draft-canon",
       },
       {
+        id: "visual-direction",
+        label: "Visual direction",
+        content:
+          "Keep the scene visually grounded: narrow spaces, hard practical light, and restrained body language rather than overt exposition.",
+        priority: "normal",
+        source: "master-draft-visual-notes",
+      },
+      {
         id: "open-questions",
         label: "Open questions",
         content:
@@ -126,11 +153,17 @@ export const createMasterDraftSampleContextPacket = (): ContextPacket => {
         level: "info",
         message: "This is a static Master Draft sample adapter, not a live host app connection.",
       },
+      {
+        id: "confirm-before-write",
+        level: "info",
+        message: "All apply/export actions are action hints only and require host-app confirmation.",
+      },
     ],
     metadata: {
-      hostApp: "master-draft",
+      hostApp: MASTER_DRAFT_INTEGRATION_ID,
       contractVersion: "0.1",
       sample: true,
+      adapter: "src/lib/integrationSamples/masterDraftAdapter.ts",
     },
     actionHints: actionHints.map(toContextActionHint),
     createdAt: SAMPLE_CREATED_AT,
@@ -146,7 +179,7 @@ export const createMasterDraftSampleEmbedConfig = (): EmbedConfig =>
       environment: "local",
     }),
     surface: "side-panel",
-    companionProfileId: "master-draft-story-companion",
+    companionProfileId: MASTER_DRAFT_SAMPLE_COMPANION_ID,
     defaultRuntimeMode: "live",
     defaultProvider: "openai",
     allowHostActions: true,
@@ -159,3 +192,16 @@ export const createMasterDraftSampleEmbedConfig = (): EmbedConfig =>
     },
     debug: true,
   });
+
+export const createMasterDraftSampleRuntimeRequest = (options?: {
+  mode?: CompanionRuntimeMode;
+  provider?: CompanionRuntimeProvider;
+  message?: string;
+}): CompanionRuntimeRequest => ({
+  profile: masterDraftCompanionProfile,
+  contextPacket: createMasterDraftSampleContextPacket(),
+  message: options?.message ?? MASTER_DRAFT_SAMPLE_USER_MESSAGE,
+  history: [],
+  mode: options?.mode ?? "mock",
+  provider: options?.provider ?? "mock",
+});
