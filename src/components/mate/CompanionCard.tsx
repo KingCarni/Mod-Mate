@@ -4,13 +4,8 @@ import React from "react";
 import { Link } from "@/components/compat/Router";
 import { Pencil, FlaskConical, Code2 } from "lucide-react";
 import Badge from "@/components/mate/Badge";
-
-const ACCENTS = {
-  sage: "bg-accent-sage/15 text-[#3F5A40]",
-  ochre: "bg-accent-ochre/20 text-[#7B5A1F]",
-  terracotta: "bg-secondary/15 text-secondary",
-  primary: "bg-primary/10 text-primary",
-};
+import CompanionAvatar from "@/components/mate/CompanionAvatar";
+import type { CompanionAvatar as CompanionAvatarMetadata } from "@/types/companionProfile";
 
 const STATUS_TONE = {
   Ready: "sage",
@@ -18,8 +13,20 @@ const STATUS_TONE = {
   Template: "primary",
 };
 
-const CompanionCard = ({ companion }) => {
-  const accent = ACCENTS[companion.accent] || ACCENTS.primary;
+type CompanionCardProps = {
+  companion: {
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    status: keyof typeof STATUS_TONE | string;
+    initials: string;
+    lastEdited: string;
+    avatar?: CompanionAvatarMetadata;
+  };
+};
+
+const CompanionCard = ({ companion }: CompanionCardProps) => {
   return (
     <article
       className="surface-card p-6 lift-on-hover flex flex-col gap-4"
@@ -27,18 +34,19 @@ const CompanionCard = ({ companion }) => {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div
-            className={`h-12 w-12 rounded-2xl flex items-center justify-center font-heading font-semibold ${accent}`}
-            aria-hidden="true"
-          >
-            {companion.initials}
-          </div>
+          <CompanionAvatar
+            name={companion.name}
+            initials={companion.initials}
+            avatar={companion.avatar}
+            size="lg"
+            className="!h-12 !w-12 !rounded-2xl !text-base"
+          />
           <div>
             <h3 className="font-heading text-lg font-medium leading-tight">{companion.name}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">{companion.category}</p>
           </div>
         </div>
-        <Badge tone={STATUS_TONE[companion.status] || "neutral"}>{companion.status}</Badge>
+        <Badge tone={STATUS_TONE[companion.status as keyof typeof STATUS_TONE] || "neutral"}>{companion.status}</Badge>
       </div>
 
       <p className="text-sm text-muted-foreground leading-relaxed">{companion.description}</p>
