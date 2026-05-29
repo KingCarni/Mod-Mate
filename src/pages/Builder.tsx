@@ -14,6 +14,8 @@ import {
   ChevronDown,
   Download,
   FlaskConical,
+  ImagePlus,
+  Loader2,
   Plus,
   RotateCcw,
   Save,
@@ -25,6 +27,11 @@ import {
 import AppShell from "@/components/layout/AppShell";
 import SectionCard from "@/components/mate/SectionCard";
 import { allowedActions, builderRules, memoryCategories } from "@/data/mockData";
+import {
+  buildAvatarUrl,
+  loadAvatar,
+  saveAvatar,
+} from "@/lib/avatarStorage";
 import {
   createCompanionProfile,
   getCompanionProfileFileName,
@@ -129,6 +136,8 @@ const createBuilderSnapshotFromProfile = (profile: CompanionProfile) =>
 
 const Builder = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const avatarPromptRef = useRef<HTMLInputElement | null>(null);
+  const avatarEditorRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState(DEFAULT_NAME);
   const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   const [category, setCategory] = useState<CompanionCategory>(DEFAULT_CATEGORY);
@@ -143,6 +152,13 @@ const Builder = () => {
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+
+  // Avatar editor — saved locally for now (no backend).
+  const [avatarSeed, setAvatarSeed] = useState<string | null>(null);
+  const [avatarPrompt, setAvatarPrompt] = useState("");
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
 
   const profile = useMemo(
     () =>
@@ -215,8 +231,55 @@ const Builder = () => {
     }
 
     setHydrated(true);
+    // Hydrate avatar from localStorage (separate from the profile draft).
+    const storedAvatar = loadAvatar();
+    if (storedAvatar) {
+      setAvatarSeed(storedAvatar.seed);
+      setAvatarPrompt(storedAvatar.seed);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const avatarUrl = avatarSeed ? buildAvatarUrl(avatarSeed) : null;
+
+  const focusAvatarEditor = () => {
+    // open + scroll the editor into view, then focus the prompt input
+    setAvatarEditorOpen(true);
+    requestAnimationFrame(() => {
+      avatarEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      avatarPromptRef.current?.focus();
+    });
+  };
+
+  const handleToggleAvatarEditor = () => {
+    if (avatarEditorOpen) {
+      setAvatarEditorOpen(false);
+    } else {
+      focusAvatarEditor();
+    }
+  };
+
+  const handleGenerateAvatar = () => {
+    const seed = avatarPrompt.trim();
+    if (!seed) {
+      setAvatarError("Add a short prompt first — for example, 'forest fox in a hoodie'.");
+      avatarPromptRef.current?.focus();
+      return;
+    }
+    setAvatarError(null);
+    setAvatarLoading(true);
+    setAvatarSeed(seed);
+    saveAvatar({ seed });
+  };
+
+  const handleClearAvatar = () => {
+    setAvatarSeed(null);
+    setAvatarPrompt("");
+    setAvatarError(null);
+    setAvatarLoading(false);
+    saveAvatar(null);
+    avatarPromptRef.current?.focus();
+  };
 
   const addRule = () => {
     if (!newRule.trim()) return;
@@ -488,15 +551,45 @@ const Builder = () => {
             <SectionCard eyebrow="01" title="Companion basics" testId="builder-basics">
               <div className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-5 items-start">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="h-24 w-24 rounded-3xl bg-accent-ochre/25 text-[#7B5A1F] flex items-center justify-center font-heading text-2xl font-medium">
-                    {name.slice(0, 2).toUpperCase()}
+                  <div
+                    className="relative h-24 w-24 rounded-3xl overflow-hidden bg-accent-ochre/25 text-[#7B5A1F] dark:bg-white/10 dark:text-foreground flex items-center justify-center font-heading text-2xl font-medium ring-1 ring-border"
+                    data-testid="builder-avatar-preview"
+                  >
+                    {avatarUrl ? (
+                      <>
+                        <img
+                          src={avatarUrl}
+                          alt="Companion avatar"
+                          className="h-full w-full object-cover"
+                          onLoad={() => setAvatarLoading(false)}
+                          onError={() => {
+                            setAvatarLoading(false);
+                            setAvatarError(
+                              "Couldn't load the generated avatar. Check your connection and try again.",
+                            );
+                          }}
+                          data-testid="builder-avatar-image"
+                        />
+                        {avatarLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+                            <Loader2 className="h-5 w-5 animate-spin text-foreground" />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <span aria-hidden="true">{name.slice(0, 2).toUpperCase()}</span>
+                    )}
                   </div>
                   <button
                     type="button"
+                    onClick={handleToggleAvatarEditor}
+                    aria-expanded={avatarEditorOpen}
+                    aria-controls="builder-avatar-editor"
                     data-testid="builder-change-avatar"
-                    className="text-xs text-muted-foreground hover:text-foreground"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white dark:bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
                   >
-                    Change avatar
+                    <ImagePlus className="h-3.5 w-3.5" />
+                    {avatarSeed ? "Change avatar" : "Add avatar"}
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
@@ -505,7 +598,7 @@ const Builder = () => {
                       value={name}
                       onChange={(event) => setName(event.target.value)}
                       data-testid="builder-name"
-                      className="mt-2 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="mt-2 w-full rounded-xl border border-border bg-white dark:bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </Field>
                   <Field label="Category">
@@ -523,12 +616,133 @@ const Builder = () => {
                         onChange={(event) => setDescription(event.target.value)}
                         rows={3}
                         data-testid="builder-description"
-                        className="mt-2 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="mt-2 w-full rounded-xl border border-border bg-white dark:bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                     </Field>
                   </div>
                 </div>
               </div>
+
+              {avatarEditorOpen && (
+                <div
+                  id="builder-avatar-editor"
+                  ref={avatarEditorRef}
+                  data-testid="builder-avatar-editor"
+                  className="mt-6 rounded-2xl border border-border bg-muted/40 dark:bg-card/60 p-5"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <p className="eyebrow">Avatar editor</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Describe the look you want. We&apos;ll generate a unique avatar from your prompt.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAvatarEditorOpen(false)}
+                      aria-label="Close avatar editor"
+                      data-testid="builder-avatar-editor-close"
+                      className="rounded-full p-1.5 text-muted-foreground hover:bg-white/70 dark:hover:bg-white/10 hover:text-foreground transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-[auto,1fr] gap-5 items-start">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="relative h-28 w-28 rounded-3xl overflow-hidden bg-white dark:bg-white/10 ring-1 ring-border flex items-center justify-center text-foreground/60">
+                        {avatarUrl ? (
+                          <img
+                            src={avatarUrl}
+                            alt="Avatar preview"
+                            className="h-full w-full object-cover"
+                            onLoad={() => setAvatarLoading(false)}
+                            onError={() => {
+                              setAvatarLoading(false);
+                              setAvatarError(
+                                "Couldn't load the generated avatar. Check your connection and try again.",
+                              );
+                            }}
+                            data-testid="builder-avatar-editor-preview-image"
+                          />
+                        ) : (
+                          <span className="text-xs">No avatar yet</span>
+                        )}
+                        {avatarLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+                            <Loader2 className="h-5 w-5 animate-spin text-foreground" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Field label="Avatar prompt">
+                        <input
+                          ref={avatarPromptRef}
+                          value={avatarPrompt}
+                          onChange={(event) => {
+                            setAvatarPrompt(event.target.value);
+                            if (avatarError) setAvatarError(null);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              handleGenerateAvatar();
+                            }
+                          }}
+                          placeholder="e.g. forest fox in a hoodie, soft watercolor"
+                          data-testid="builder-avatar-prompt"
+                          className="mt-2 w-full rounded-xl border border-border bg-white dark:bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </Field>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleGenerateAvatar}
+                          disabled={avatarLoading}
+                          data-testid="builder-avatar-generate"
+                          className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all disabled:opacity-60 disabled:translate-y-0"
+                        >
+                          {avatarLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          {avatarSeed ? "Regenerate avatar" : "Generate avatar"}
+                        </button>
+                        {avatarSeed && (
+                          <button
+                            type="button"
+                            onClick={handleClearAvatar}
+                            data-testid="builder-avatar-clear"
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-white dark:bg-card text-foreground px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Remove avatar
+                          </button>
+                        )}
+                      </div>
+
+                      {avatarError && (
+                        <p
+                          role="alert"
+                          data-testid="builder-avatar-error"
+                          className="flex items-start gap-2 text-sm text-secondary"
+                        >
+                          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                          <span>{avatarError}</span>
+                        </p>
+                      )}
+
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Avatars are saved locally on this device for now. We&apos;ll wire them to your account when sign-in lands.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </SectionCard>
 
             <SectionCard eyebrow="02" title="Persona" description="How it speaks, what it does, and how it shows up." testId="builder-persona">
