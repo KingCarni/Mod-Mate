@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Eye } from "lucide-react";
 import Badge from "@/components/mate/Badge";
 
 const BGS = {
@@ -9,6 +9,13 @@ const BGS = {
   ochre: "bg-[#F4E2C2]",
   terracotta: "bg-[#F2D6CD]",
   primary: "bg-[#D7E0DE]",
+};
+
+const MATURITY_TONES = {
+  Ready: "sage",
+  Template: "primary",
+  Concept: "ochre",
+  "Coming Soon": "neutral",
 };
 
 type TemplateCardProps = {
@@ -20,13 +27,21 @@ type TemplateCardProps = {
     bg: string;
     image?: string;
     tag?: string;
+    maturity?: keyof typeof MATURITY_TONES;
+    starterPrompt?: string;
+    memoryPreview?: string[];
+    guardrailPreview?: string[];
+    actionPreview?: string[];
   };
   featured?: boolean;
   onUseTemplate?: (templateId: string) => void;
+  onPreviewTemplate?: (templateId: string) => void;
 };
 
-const TemplateCard = ({ template, featured = false, onUseTemplate }: TemplateCardProps) => {
+const TemplateCard = ({ template, featured = false, onUseTemplate, onPreviewTemplate }: TemplateCardProps) => {
   const bg = BGS[template.bg as keyof typeof BGS] || BGS.sage;
+  const maturityTone = template.maturity ? MATURITY_TONES[template.maturity] : "neutral";
+
   return (
     <article
       className={`group relative grain rounded-3xl border border-border ${bg} ${
@@ -35,10 +50,17 @@ const TemplateCard = ({ template, featured = false, onUseTemplate }: TemplateCar
       data-testid={`template-card-${template.id}`}
     >
       <div className="relative z-10 p-7 flex flex-col h-full min-h-[260px]">
-        <div className="flex items-center justify-between">
-          <Badge tone="primary" className="bg-white/60 backdrop-blur">
-            {template.category}
-          </Badge>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Badge tone="primary" className="bg-white/60 backdrop-blur">
+              {template.category}
+            </Badge>
+            {template.maturity && (
+              <Badge tone={maturityTone} className="bg-white/70 backdrop-blur">
+                {template.maturity}
+              </Badge>
+            )}
+          </div>
           {template.tag && (
             <Badge tone="terracotta" className="bg-white/60 backdrop-blur">
               {template.tag}
@@ -51,14 +73,29 @@ const TemplateCard = ({ template, featured = false, onUseTemplate }: TemplateCar
             {template.title}
           </h3>
           <p className="text-sm text-primary/70 mt-2 max-w-md">{template.description}</p>
-          <button
-            type="button"
-            onClick={() => onUseTemplate?.(template.id)}
-            data-testid={`template-${template.id}-cta`}
-            className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-primary bg-white/70 backdrop-blur rounded-full px-4 py-2 hover:bg-white transition-colors"
-          >
-            Use template <ArrowUpRight className="h-3.5 w-3.5" />
-          </button>
+          {template.starterPrompt && (
+            <p className="mt-4 text-xs text-primary/70 bg-white/45 border border-white/50 rounded-2xl px-3 py-2 max-w-md">
+              “{template.starterPrompt}”
+            </p>
+          )}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onPreviewTemplate?.(template.id)}
+              data-testid={`template-${template.id}-preview`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary bg-white/70 backdrop-blur rounded-full px-4 py-2 hover:bg-white transition-colors"
+            >
+              Preview <Eye className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onUseTemplate?.(template.id)}
+              data-testid={`template-${template.id}-cta`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary bg-white/70 backdrop-blur rounded-full px-4 py-2 hover:bg-white transition-colors"
+            >
+              Use template <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
