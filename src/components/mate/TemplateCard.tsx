@@ -42,8 +42,8 @@ const TemplateCard = ({ template, featured = false, onUseTemplate, onPreviewTemp
   const bg = BGS[template.bg as keyof typeof BGS] || BGS.sage;
   const maturityTone = template.maturity ? MATURITY_TONES[template.maturity] : "neutral";
   const promptPillWidth = template.image
-    ? "w-fit max-w-[15rem] sm:max-w-[17rem] lg:max-w-[16rem]"
-    : "w-fit max-w-[min(100%,26rem)]";
+    ? "w-fit max-w-[10.5rem] sm:max-w-[11.75rem] lg:max-w-[11.25rem]"
+    : "w-fit max-w-[min(100%,18rem)]";
 
   return (
     <article
@@ -109,7 +109,7 @@ const TemplateCard = ({ template, featured = false, onUseTemplate, onPreviewTemp
           src={template.image}
           alt=""
           aria-hidden="true"
-          className="absolute right-0 bottom-0 w-44 md:w-56 opacity-90 pointer-events-none select-none translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform duration-500"
+          className="absolute right-4 bottom-4 w-40 md:w-52 opacity-90 pointer-events-none select-none rounded-3xl shadow-sm translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform duration-500"
         />
       )}
     </article>
