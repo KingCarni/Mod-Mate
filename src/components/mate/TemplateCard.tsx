@@ -38,7 +38,7 @@ type TemplateCardProps = {
   onPreviewTemplate?: (templateId: string) => void;
 };
 
-const TemplateCard = ({ template, featured = false, onUseTemplate, onPreviewTemplate }: TemplateCardProps) => {
+const TemplateCard = ({ template, onUseTemplate, onPreviewTemplate }: TemplateCardProps) => {
   const bg = BGS[template.bg as keyof typeof BGS] || BGS.sage;
   const maturityTone = template.maturity ? MATURITY_TONES[template.maturity] : "neutral";
   const promptPillWidth = template.image
@@ -47,12 +47,10 @@ const TemplateCard = ({ template, featured = false, onUseTemplate, onPreviewTemp
 
   return (
     <article
-      className={`group relative grain rounded-3xl border border-border ${bg} ${
-        featured ? "md:col-span-2 md:row-span-2" : ""
-      } overflow-hidden lift-on-hover`}
+      className={`group relative grain rounded-3xl border border-border ${bg} overflow-hidden lift-on-hover`}
       data-testid={`template-card-${template.id}`}
     >
-      <div className="relative z-10 p-7 flex flex-col h-full min-h-[260px]">
+      <div className="relative z-10 p-7 flex flex-col h-full min-h-[300px]">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap gap-2">
             <Badge tone="primary" className="bg-white/60 backdrop-blur">
