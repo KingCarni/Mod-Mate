@@ -41,16 +41,22 @@ type TemplateCardProps = {
 const TemplateCard = ({ template, onUseTemplate, onPreviewTemplate }: TemplateCardProps) => {
   const bg = BGS[template.bg as keyof typeof BGS] || BGS.sage;
   const maturityTone = template.maturity ? MATURITY_TONES[template.maturity] : "neutral";
-  const promptPillWidth = template.image
-    ? "w-fit max-w-[10.5rem] sm:max-w-[11.75rem] lg:max-w-[11.25rem]"
-    : "w-fit max-w-[min(100%,18rem)]";
+  const hasImage = Boolean(template.image);
+
+  // Reserve a decorative lower-right zone for the image so prompt + buttons never overlap it.
+  const contentPadding = hasImage ? "p-7 pr-7 pb-44 md:pb-7 md:pr-44" : "p-7";
+  const textColumn = hasImage ? "max-w-full md:max-w-[60%]" : "max-w-full";
+  const descriptionWidth = hasImage ? "max-w-[18rem]" : "max-w-md";
+  const promptPillWidth = hasImage
+    ? "max-w-[14rem] md:max-w-[15rem]"
+    : "max-w-[min(100%,18rem)]";
 
   return (
     <article
-      className={`group relative grain rounded-3xl border border-border ${bg} overflow-hidden lift-on-hover`}
+      className={`group relative grain rounded-3xl border border-border ${bg} overflow-hidden lift-on-hover h-full`}
       data-testid={`template-card-${template.id}`}
     >
-      <div className="relative z-10 p-7 flex flex-col h-full min-h-[300px]">
+      <div className={`relative z-10 ${contentPadding} flex flex-col h-full min-h-[300px]`}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap gap-2">
             <Badge tone="primary" className="bg-white/60 backdrop-blur">
@@ -69,14 +75,14 @@ const TemplateCard = ({ template, onUseTemplate, onPreviewTemplate }: TemplateCa
           )}
         </div>
 
-        <div className="mt-auto pt-10">
-          <h3 className="font-heading text-2xl md:text-3xl font-medium leading-tight text-primary">
+        <div className={`mt-auto pt-10 ${textColumn}`}>
+          <h3 className="font-heading text-2xl md:text-[1.6rem] font-medium leading-tight text-primary">
             {template.title}
           </h3>
-          <p className="text-sm text-primary/70 mt-2 max-w-md">{template.description}</p>
+          <p className={`text-sm text-primary/70 mt-2 ${descriptionWidth}`}>{template.description}</p>
           {template.starterPrompt && (
             <p
-              className={`mt-4 inline-block ${promptPillWidth} text-xs leading-snug text-primary/70 bg-white/55 border border-white/60 rounded-2xl px-3 py-2 break-words whitespace-normal`}
+              className={`mt-4 inline-block w-fit ${promptPillWidth} text-xs leading-snug text-primary/75 bg-white/60 border border-white/70 rounded-2xl px-3 py-2 break-words whitespace-normal shadow-sm`}
             >
               “{template.starterPrompt}”
             </p>
@@ -102,13 +108,18 @@ const TemplateCard = ({ template, onUseTemplate, onPreviewTemplate }: TemplateCa
         </div>
       </div>
 
-      {template.image && (
-        <img
-          src={template.image}
-          alt=""
+      {hasImage && (
+        <div
           aria-hidden="true"
-          className="absolute right-4 bottom-4 w-40 md:w-52 opacity-90 pointer-events-none select-none rounded-3xl shadow-sm translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform duration-500"
-        />
+          className="pointer-events-none absolute right-3 bottom-3 w-32 md:w-40 lg:w-44"
+        >
+          <img
+            src={template.image}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-auto rounded-2xl shadow-sm opacity-90 select-none transition-transform duration-500 group-hover:-translate-y-1"
+          />
+        </div>
       )}
     </article>
   );

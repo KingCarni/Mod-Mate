@@ -22,6 +22,13 @@ const visibleTemplates = templates.filter((template) => {
   return showInternalTemplates || template.visibility !== "internal";
 });
 
+const safeInitialPreviewId = (() => {
+  const firstFeatured = featuredTemplateIds.find((id) =>
+    visibleTemplates.some((t) => t.id === id),
+  );
+  return firstFeatured ?? visibleTemplates[0]?.id ?? null;
+})();
+
 const maturityCopy = [
   { label: "Ready", body: "Has a full companion profile wired into Builder and Playground.", tone: "sage" },
   { label: "Template", body: "Good starter shape; may still need project-specific tuning.", tone: "primary" },
@@ -34,7 +41,7 @@ const Templates = () => {
   const [active, setActive] = useState("All");
   const [query, setQuery] = useState("");
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
-  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(featuredTemplateIds[0] ?? null);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(safeInitialPreviewId);
 
   const featuredTemplates = useMemo(
     () => featuredTemplateIds
@@ -117,14 +124,14 @@ const Templates = () => {
                 </div>
               )}
             </div>
-            <div className="relative w-full lg:w-80">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <div className="relative w-full lg:w-96">
+              <Search className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search templates, memory, rules..."
                 data-testid="templates-search"
-                className="rounded-full border border-border bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full"
+                className="rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full shadow-sm"
               />
             </div>
           </div>
@@ -136,7 +143,7 @@ const Templates = () => {
           description="These show the range of Mod-Mate: creative workflows, QA/product work, and game-system design."
           testId="featured-templates"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-fr">
             {featuredTemplates.map((template) => (
               <TemplateCard
                 key={template.id}
@@ -158,34 +165,40 @@ const Templates = () => {
               <button
                 type="button"
                 onClick={() => setPreviewTemplateId(null)}
-                className="rounded-full border border-border bg-white p-2 text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="rounded-full border border-border bg-white p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Close template preview"
+                data-testid="template-preview-close"
               >
                 <X className="h-4 w-4" />
               </button>
             }
           >
             <div className="grid grid-cols-1 xl:grid-cols-[0.95fr,1.05fr] gap-6">
-              <div className="rounded-3xl border border-border bg-muted/35 p-5">
+              <div className="rounded-3xl border border-border bg-muted/35 p-6 flex flex-col">
                 <div className="flex flex-wrap gap-2">
                   <Badge tone="primary">{selectedPreview.category}</Badge>
                   {selectedPreview.maturity && <Badge tone="sage">{selectedPreview.maturity}</Badge>}
                   {selectedPreview.tag && <Badge tone="ochre">{selectedPreview.tag}</Badge>}
                 </div>
-                <div className="mt-5 rounded-2xl bg-primary text-primary-foreground p-5">
+                <div className="mt-6 rounded-2xl bg-primary text-primary-foreground p-6">
                   <p className="eyebrow text-primary-foreground/70">Starter prompt</p>
-                  <p className="font-heading text-xl leading-snug mt-2">
+                  <p className="font-heading text-xl leading-snug mt-3">
                     {selectedPreview.starterPrompt ?? "What should this companion help with first?"}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => useTemplate(selectedPreview.id)}
-                  data-testid="template-preview-use"
-                  className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all"
-                >
-                  Use this template <ArrowUpRight className="h-4 w-4" />
-                </button>
+                <div className="mt-auto pt-6">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Loads <span className="font-medium text-foreground">{selectedPreview.title}</span> into Builder.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => useTemplate(selectedPreview.id)}
+                    data-testid="template-preview-use"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:-translate-y-0.5 hover:shadow-lift transition-all"
+                  >
+                    Use this template <ArrowUpRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -197,17 +210,17 @@ const Templates = () => {
           </SectionCard>
         )}
 
-        <div className="flex flex-wrap gap-2" data-testid="templates-filters">
+        <div className="flex flex-wrap items-center gap-2.5" data-testid="templates-filters">
           {templateCategories.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setActive(c)}
               data-testid={`filter-${c.toLowerCase().replace(/[^a-z]+/g, "-")}`}
-              className={`rounded-full px-4 py-1.5 text-xs font-medium border transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-xs font-medium border transition-all ${
                 active === c
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-white text-foreground border-border hover:bg-muted"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-white text-foreground/80 border-border hover:bg-muted hover:text-foreground"
               }`}
             >
               {c}
@@ -216,7 +229,7 @@ const Templates = () => {
         </div>
 
         <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-[minmax(300px,_auto)]"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-fr"
           data-testid="templates-grid"
         >
           {filtered.map((t) => (
@@ -280,13 +293,13 @@ const Templates = () => {
 };
 
 const PreviewList = ({ title, items }: { title: string; items: string[] }) => (
-  <div className="rounded-2xl border border-border bg-white p-4">
+  <div className="rounded-2xl border border-border bg-white p-5 flex flex-col">
     <p className="eyebrow">{title}</p>
-    <div className="mt-3 space-y-2">
+    <div className="mt-3 space-y-2.5 flex-1">
       {items.length > 0 ? (
         items.map((item) => (
-          <div key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-3.5 w-3.5 text-accent-sage mt-0.5 shrink-0" />
+          <div key={item} className="flex items-start gap-2 text-sm text-foreground/80 leading-snug">
+            <CheckCircle2 className="h-3.5 w-3.5 text-accent-sage mt-1 shrink-0" />
             <span>{item}</span>
           </div>
         ))
