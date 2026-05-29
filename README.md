@@ -80,6 +80,7 @@ docs/product/
 Current product docs:
 
 - `docs/product/template-discovery-categories.md` — companion template discovery categories and public-facing label guidance
+- `docs/product/creative-media-concept-modules.md` — future creative media template/module concepts and capability mapping
 
 ## Integration contracts
 
