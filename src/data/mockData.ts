@@ -104,6 +104,7 @@ export const templates = [
     image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
     tag: "Featured",
     maturity: "Concept",
+    visibility: "public",
     starterPrompt: "Does this scene match the tone, character voice, and story promise?",
     memoryPreview: ["Characters", "Story beats", "Tone notes"],
     guardrailPreview: ["Do not invent canon", "Ask for missing context", "Flag continuity risks"],
@@ -118,6 +119,7 @@ export const templates = [
     bg: "sage",
     tag: "Proof integration",
     maturity: "Ready",
+    visibility: "internal",
     starterPrompt: "What risks should I flag and what coverage should I suggest?",
     memoryPreview: ["Project Brain", "QA rules", "Risk register", "Jira/TestRail state"],
     guardrailPreview: ["Do not invent test evidence", "Separate facts from assumptions", "Respect integration state"],
@@ -133,6 +135,7 @@ export const templates = [
     image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
     tag: "Proof integration",
     maturity: "Ready",
+    visibility: "internal",
     starterPrompt: "Does this selected line break canon, or does it create a strong enough first-compromise moment?",
     memoryPreview: ["Story Bible", "Characters", "Canon facts", "Never Break rules"],
     guardrailPreview: ["Respect Never Break rules", "Do not invent story facts", "Mark uncertainty clearly"],
@@ -146,6 +149,7 @@ export const templates = [
     bg: "sage",
     tag: "Popular",
     maturity: "Template",
+    visibility: "public",
     starterPrompt: "What is missing from this bug report before it is ready for development?",
     memoryPreview: ["Bug history", "QA rules", "Risk areas"],
     guardrailPreview: ["Call out unknowns", "Do not invent repro steps", "Prioritize user impact"],
@@ -159,6 +163,7 @@ export const templates = [
     bg: "primary",
     tag: "Featured",
     maturity: "Concept",
+    visibility: "public",
     starterPrompt: "Where is this economy loop likely to break after day three?",
     memoryPreview: ["Currencies", "Loops", "Progression gates"],
     guardrailPreview: ["Explain assumptions", "Avoid unsafe nerfs", "Protect player motivation"],
@@ -172,6 +177,7 @@ export const templates = [
     bg: "sage",
     tag: "New",
     maturity: "Template",
+    visibility: "public",
     starterPrompt: "How would this user solve their setup issue from our docs?",
     memoryPreview: ["Product docs", "Known issues", "Support tone"],
     guardrailPreview: ["Answer from sources", "Ask for missing context", "Do not expose private notes"],
@@ -185,6 +191,7 @@ export const templates = [
     bg: "ochre",
     tag: "Featured",
     maturity: "Concept",
+    visibility: "public",
     starterPrompt: "What should this character remember about our last scene together?",
     memoryPreview: ["Backstory", "Voice", "Relationship notes", "World rules"],
     guardrailPreview: ["Stay in character", "Respect world rules", "Keep boundaries clear"],
@@ -199,6 +206,7 @@ export const templates = [
     image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/2d35c4f2a5070a4a8e5b2e6d12f2e0f1b0aed32187cf92ac948b142571b0b0f2.png",
     tag: "New",
     maturity: "Concept",
+    visibility: "public",
     starterPrompt: "What did the party leave unresolved last session?",
     memoryPreview: ["Party state", "NPCs", "Locations", "Session clocks"],
     guardrailPreview: ["Do not retcon canon", "Ask before major reveals", "Track open threads"],
@@ -213,6 +221,7 @@ export const templates = [
     image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/62258c8504fc1c6292f4fc093b2d8f1a4f03230a0109cf36cd3da556b61a47f3.png",
     tag: "Popular",
     maturity: "Coming Soon",
+    visibility: "public",
     starterPrompt: "What should I do next on this screen?",
     memoryPreview: ["Screen context", "Docs", "User goal"],
     guardrailPreview: ["Avoid hidden actions", "Use current screen first", "Escalate unclear cases"],
@@ -226,6 +235,7 @@ export const templates = [
     bg: "primary",
     tag: "Concept",
     maturity: "Concept",
+    visibility: "public",
     starterPrompt: "What is the next best handoff note for this project?",
     memoryPreview: ["SOPs", "Decisions", "Team vocabulary"],
     guardrailPreview: ["Keep private data out", "Confirm before writes", "Separate tasks from context"],
@@ -233,7 +243,7 @@ export const templates = [
   },
 ];
 
-export const featuredTemplateIds = ["screenplay", "qatalyst-qa-lead", "game-economy"];
+export const featuredTemplateIds = ["screenplay", "qa-triage", "game-economy"];
 
 export const futureConcepts = [
   { id: "act-out", title: "Scene Studio Companion", note: "Demo concept" },
