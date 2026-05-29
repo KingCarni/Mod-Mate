@@ -80,6 +80,7 @@ docs/integrations/
 Current contract docs:
 
 - `docs/integrations/master-draft-contract.md` — Master Draft ↔ Mod-Mate integration contract
+- `docs/integrations/qatalyst-contract.md` — QAtalyst ↔ Mod-Mate integration contract
 
 ## Run locally
 
