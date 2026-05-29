@@ -13,6 +13,7 @@ import {
   PlusCircle,
 } from "lucide-react";
 import Logo from "@/components/mate/Logo";
+import ThemeToggle from "@/components/mate/ThemeToggle";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,7 +32,7 @@ const AppShell = ({ children }) => {
     <div className="min-h-screen flex bg-background" data-testid="app-shell">
       {/* Sidebar */}
       <aside
-        className="hidden lg:flex w-64 shrink-0 border-r border-border bg-white/60 backdrop-blur-sm flex-col"
+        className="hidden lg:flex w-64 shrink-0 border-r border-border bg-white/60 dark:bg-card/60 backdrop-blur-sm flex-col"
         data-testid="app-sidebar"
       >
         <div className="px-6 py-7">
@@ -107,6 +108,7 @@ const AppShell = ({ children }) => {
               >
                 <Home className="h-4 w-4" /> Home
               </Link>
+              <ThemeToggle />
               <div
                 className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium"
                 data-testid="topbar-avatar"

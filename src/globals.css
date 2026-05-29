@@ -49,6 +49,43 @@
 
         --radius: 1rem;
     }
+
+    .dark {
+        /* Mod-Mate — Dark theme: deep forest + warm cream text */
+        --background: 170 14% 8%;          /* deep forest-near-black */
+        --foreground: 40 18% 92%;          /* warm cream */
+
+        --surface: 170 14% 11%;
+        --surface-foreground: 40 18% 92%;
+
+        --card: 170 14% 11%;
+        --card-foreground: 40 18% 92%;
+
+        --popover: 170 14% 11%;
+        --popover-foreground: 40 18% 92%;
+
+        --primary: 36 62% 64%;             /* warm ochre — buttons pop in dark */
+        --primary-foreground: 170 30% 10%;
+
+        --secondary: 12 51% 58%;
+        --secondary-foreground: 170 30% 10%;
+
+        --muted: 170 10% 16%;
+        --muted-foreground: 40 10% 70%;
+
+        --accent-sage: 105 14% 62%;
+        --accent-ochre: 36 62% 62%;
+
+        --accent: 170 10% 16%;
+        --accent-foreground: 40 18% 92%;
+
+        --destructive: 12 51% 58%;
+        --destructive-foreground: 40 18% 92%;
+
+        --border: 170 10% 20%;
+        --input: 170 10% 20%;
+        --ring: 36 62% 64%;
+    }
 }
 
 @layer base {
@@ -68,6 +105,11 @@
             radial-gradient(circle at 100% 100%, rgba(138, 154, 134, 0.05), transparent 40%);
         background-attachment: fixed;
     }
+    .dark body {
+        background-image:
+            radial-gradient(circle at 0% 0%, rgba(214, 159, 76, 0.08), transparent 45%),
+            radial-gradient(circle at 100% 100%, rgba(138, 154, 134, 0.06), transparent 45%);
+    }
     h1, h2, h3, h4, h5, h6 {
         font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
         letter-spacing: -0.015em;
@@ -86,7 +128,7 @@
         @apply text-xs uppercase tracking-[0.22em] font-semibold text-muted-foreground;
     }
     .surface-card {
-        @apply bg-white border border-border rounded-2xl;
+        @apply bg-white dark:bg-card border border-border rounded-2xl;
     }
     .lift-on-hover {
         @apply transition-all duration-300 ease-out;

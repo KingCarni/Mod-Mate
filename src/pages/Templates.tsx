@@ -131,7 +131,7 @@ const Templates = () => {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search templates, memory, rules..."
                 data-testid="templates-search"
-                className="rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full shadow-sm"
+                className="rounded-full border border-border bg-white dark:bg-card pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full shadow-sm text-foreground placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -165,7 +165,7 @@ const Templates = () => {
               <button
                 type="button"
                 onClick={() => setPreviewTemplateId(null)}
-                className="rounded-full border border-border bg-white p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="rounded-full border border-border bg-white dark:bg-card p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Close template preview"
                 data-testid="template-preview-close"
               >
@@ -220,7 +220,7 @@ const Templates = () => {
               className={`rounded-full px-4 py-1.5 text-xs font-medium border transition-all ${
                 active === c
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-white text-foreground/80 border-border hover:bg-muted hover:text-foreground"
+                  : "bg-white dark:bg-card text-foreground/80 border-border hover:bg-muted hover:text-foreground"
               }`}
             >
               {c}
@@ -257,7 +257,7 @@ const Templates = () => {
         >
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {maturityCopy.map((item) => (
-              <div key={item.label} className="rounded-2xl border border-border bg-white p-4">
+              <div key={item.label} className="rounded-2xl border border-border bg-white dark:bg-card p-4">
                 <Badge tone={item.tone}>{item.label}</Badge>
                 <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{item.body}</p>
               </div>
@@ -293,7 +293,7 @@ const Templates = () => {
 };
 
 const PreviewList = ({ title, items }: { title: string; items: string[] }) => (
-  <div className="rounded-2xl border border-border bg-white p-5 flex flex-col">
+  <div className="rounded-2xl border border-border bg-white dark:bg-card p-5 flex flex-col">
     <p className="eyebrow">{title}</p>
     <div className="mt-3 space-y-2.5 flex-1">
       {items.length > 0 ? (

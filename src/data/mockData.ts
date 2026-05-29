@@ -94,6 +94,12 @@ export const templateCategories = [
   "Docs & Knowledge",
 ];
 
+const TYPEWRITER_IMG = "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png";
+const DICE_IMG = "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/2d35c4f2a5070a4a8e5b2e6d12f2e0f1b0aed32187cf92ac948b142571b0b0f2.png";
+const BRIEFCASE_IMG = "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/62258c8504fc1c6292f4fc093b2d8f1a4f03230a0109cf36cd3da556b61a47f3.png";
+const QATALYST_LOGO = "https://customer-assets.emergentagent.com/job_template-showcase-33/artifacts/vja66sie_qatalyst-logo.png";
+const MASTER_DRAFT_LOGO = "https://customer-assets.emergentagent.com/job_template-showcase-33/artifacts/00gi937j_master-draft-logo.png";
+
 export const templates = [
   {
     id: "screenplay",
@@ -101,7 +107,8 @@ export const templates = [
     category: "Writing & Story",
     description: "A companion that tracks beats, characters, and tone across long drafts.",
     bg: "ochre",
-    image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
+    image: TYPEWRITER_IMG,
+    icon: "feather",
     tag: "Featured",
     maturity: "Concept",
     visibility: "public",
@@ -117,6 +124,9 @@ export const templates = [
     description:
       "Production-style QA companion for triage, risk review, coverage gaps, release readiness, and workflow-specific quality guidance.",
     bg: "sage",
+    image: QATALYST_LOGO,
+    imageStyle: "logo",
+    icon: "bug",
     tag: "Proof integration",
     maturity: "Ready",
     visibility: "internal",
@@ -132,7 +142,9 @@ export const templates = [
     description:
       "Production-style screenplay companion for story analysis, continuity, pitch clarity, and visual development notes.",
     bg: "ochre",
-    image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/0f561b7fe1866a018de387befa3662371e7489c32e0ff8c676fbdca81be0e7d2.png",
+    image: MASTER_DRAFT_LOGO,
+    imageStyle: "logo",
+    icon: "feather",
     tag: "Proof integration",
     maturity: "Ready",
     visibility: "internal",
@@ -147,6 +159,7 @@ export const templates = [
     category: "QA & Product",
     description: "Cluster bugs by root cause, propose repro steps, and explain regressions.",
     bg: "sage",
+    icon: "bug",
     tag: "Popular",
     maturity: "Template",
     visibility: "public",
@@ -161,6 +174,7 @@ export const templates = [
     category: "Game Design",
     description: "Read your gameplay loops and suggest balance tweaks with clear reasoning.",
     bg: "primary",
+    icon: "sliders",
     tag: "Featured",
     maturity: "Concept",
     visibility: "public",
@@ -175,6 +189,7 @@ export const templates = [
     category: "Docs & Knowledge",
     description: "Point a companion at your documentation and let it answer real user questions.",
     bg: "sage",
+    icon: "book-open",
     tag: "New",
     maturity: "Template",
     visibility: "public",
@@ -189,6 +204,7 @@ export const templates = [
     category: "Characters & Worlds",
     description: "Long-running character companions with memory categories you control.",
     bg: "ochre",
+    icon: "user-round",
     tag: "Featured",
     maturity: "Concept",
     visibility: "public",
@@ -203,7 +219,8 @@ export const templates = [
     category: "Characters & Worlds",
     description: "Remember party state, NPC voices, and campaign clocks between sessions.",
     bg: "terracotta",
-    image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/2d35c4f2a5070a4a8e5b2e6d12f2e0f1b0aed32187cf92ac948b142571b0b0f2.png",
+    image: DICE_IMG,
+    icon: "dice",
     tag: "New",
     maturity: "Concept",
     visibility: "public",
@@ -218,7 +235,8 @@ export const templates = [
     category: "Support & Onboarding",
     description: "Drop-in companion that answers in-product questions with your docs.",
     bg: "terracotta",
-    image: "https://static.prod-images.emergentagent.com/jobs/738a68c8-fd47-4930-8d69-a5af3486fa84/images/62258c8504fc1c6292f4fc093b2d8f1a4f03230a0109cf36cd3da556b61a47f3.png",
+    image: BRIEFCASE_IMG,
+    icon: "compass",
     tag: "Popular",
     maturity: "Coming Soon",
     visibility: "public",
@@ -233,6 +251,7 @@ export const templates = [
     category: "Business Workflow",
     description: "A shared assistant that learns your team's vocabulary, rituals, and checklists.",
     bg: "primary",
+    icon: "workflow",
     tag: "Concept",
     maturity: "Concept",
     visibility: "public",
