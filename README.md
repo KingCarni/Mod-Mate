@@ -4,7 +4,7 @@ Mod-Mate is a standalone platform for building, testing, and eventually embeddin
 
 ## Current status
 
-The app now has a working local companion builder, portable companion profile templates, import/export support, a Playground, a runtime API, and live OpenAI mode behind a server-side environment key.
+The app now has a working local companion builder, portable companion profile templates, import/export support, a Playground, a runtime API, live OpenAI mode behind a server-side environment key, and Phase 1 embeddable integration foundation types/docs/sample adapters.
 
 Still not implemented yet:
 
@@ -69,6 +69,21 @@ Production-style starter templates currently include:
 
 Both can be loaded from `/templates`, edited in `/builder`, and tested in `/playground`.
 
+## Integration foundation
+
+MOD-4 Phase 1 adds shared integration types, helpers, and sample host adapters.
+
+Key files:
+
+```txt
+src/types/integration.ts
+src/lib/integrations.ts
+src/lib/integrationSamples/masterDraftAdapter.ts
+src/lib/integrationSamples/qatalystAdapter.ts
+```
+
+This foundation is not a production embed system yet. It does not add auth, billing, database persistence, token issuing, real host app connections, or silent host app writes.
+
 ## Product docs
 
 Product planning docs live in:
@@ -93,6 +108,7 @@ docs/integrations/
 
 Current contract docs:
 
+- `docs/integrations/embeddable-integration-system.md` — shared embeddable integration system foundation
 - `docs/integrations/master-draft-contract.md` — Master Draft ↔ Mod-Mate integration contract
 - `docs/integrations/qatalyst-contract.md` — QAtalyst ↔ Mod-Mate integration contract
 
