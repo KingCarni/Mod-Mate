@@ -98,11 +98,11 @@ const renderContext = (context) => {
   elements.selectedText.value = context.selectedText || "";
 
   if (context.selectedText) {
-    const source = context.captureMethod === "context-menu" ? " from right-click menu" : "";
+    const source = context.captureMethod === "context-menu" ? " from right-click menu" : context.captureMethod === "direct-injection" ? " from page capture" : "";
     setStatus(`Selected text captured${source}. No page data was sent automatically.`, "success");
     elements.copyContext.disabled = false;
   } else {
-    setStatus("No selected text found. Try right-clicking selected text and choosing Send selection to Mod-Mate.", "error");
+    setStatus("No selected text found. Try clicking Refresh selection, or right-click selected text and choose Send selection to Mod-Mate.", "error");
     elements.copyContext.disabled = true;
   }
 };
@@ -114,11 +114,64 @@ const loadContextMenuSelection = async () => {
   return null;
 };
 
+const runDirectSelectionCapture = async (tab) => {
+  if (!tab?.id || !chrome.scripting?.executeScript) return null;
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id, allFrames: true },
+    func: () => {
+      const getSelectedFromElement = () => {
+        const active = document.activeElement;
+        if (!active) return "";
+        const tagName = active.tagName?.toLowerCase();
+        if ((tagName === "textarea" || tagName === "input") && typeof active.value === "string") {
+          const start = typeof active.selectionStart === "number" ? active.selectionStart : 0;
+          const end = typeof active.selectionEnd === "number" ? active.selectionEnd : 0;
+          return end > start ? active.value.slice(start, end).trim() : "";
+        }
+        if (active.isContentEditable) {
+          return window.getSelection()?.toString().trim() || active.textContent?.trim() || "";
+        }
+        return "";
+      };
+
+      const selectionText = window.getSelection()?.toString().trim() || getSelectedFromElement();
+      return {
+        selectedText: selectionText,
+        title: document.title || "Untitled page",
+        url: window.location.href,
+        topUrl: window.location.href,
+        host: window.location.host,
+        frameUrl: window.location.href,
+        capturedAt: new Date().toISOString(),
+        captureMethod: "direct-injection",
+      };
+    },
+  });
+
+  const contexts = results.map((result) => result.result).filter(Boolean);
+  return contexts.find((context) => context.selectedText) || null;
+};
+
 const requestSelectedContext = async () => {
   const tab = await getActiveTab();
   if (!tab?.id) {
     setStatus("Could not find the active tab.", "error");
     return;
+  }
+
+  try {
+    const directContext = await runDirectSelectionCapture(tab);
+    if (directContext?.selectedText) {
+      renderContext({
+        ...directContext,
+        title: directContext.title || tab.title || "Untitled page",
+        url: directContext.topUrl || directContext.url || tab.url || "",
+      });
+      return;
+    }
+  } catch {
+    // Direct injection can fail on restricted pages. Fall through to content-script/context-menu paths.
   }
 
   try {
