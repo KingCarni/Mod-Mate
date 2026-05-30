@@ -1,75 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, Code2, PanelRight, ShieldCheck } from "lucide-react";
 import { Link } from "@/components/compat/Router";
 import AppShell from "@/components/layout/AppShell";
 import ModMateSidePanel from "@/components/mate/ModMateSidePanel";
 import SectionCard from "@/components/mate/SectionCard";
+import { createHostAdapterPreview, hostAppAdapters } from "@/lib/hostAppAdapters";
 
-const contextSections = [
-  {
-    id: "selected-text",
-    label: "Selected text",
-    detail: "The host app decides what selected text or current record is safe to send.",
-  },
-  {
-    id: "memory",
-    label: "Memory sections",
-    detail: "Project notes, rules, active objects, and workflow state arrive as structured sections.",
-  },
-  {
-    id: "warnings",
-    label: "Warnings",
-    detail: "Potential missing context, risky claims, or stale data can be flagged before answering.",
-  },
-];
+type AdapterId = "master-draft" | "qatalyst";
 
-const messages = [
-  {
-    id: "user-1",
-    role: "user" as const,
-    content: "Can you review this selected section and tell me what risks or continuity issues I should check?",
-  },
-  {
-    id: "assistant-1",
-    role: "assistant" as const,
-    content:
-      "I can review it against the host-provided context. I see three loaded memory sections and two confirm-first action hints. I would flag missing setup, unclear ownership, and any rule conflicts before suggesting edits.",
-  },
-];
-
-const actionHints = [
-  {
-    id: "suggest-rewrite",
-    label: "Suggest rewrite",
-    description: "Return a proposed edit for the host app to preview before applying.",
-    requiresConfirmation: true,
-  },
-  {
-    id: "save-note",
-    label: "Save note to project memory",
-    description: "Prepare a memory update that the host app must confirm first.",
-    requiresConfirmation: true,
-  },
-];
-
-const panelContract = `type SidePanelInput = {
+const panelContract = `type HostAppAdapter<THostState> = {
+  id: string;
+  hostApp: HostAppIdentity;
   companionProfileId: string;
-  hostApp: {
-    id: string;
-    name: string;
-    surface: "side-panel";
-    activeView: string;
-  };
-  contextPacket: {
-    sections: ContextSection[];
-    warnings: string[];
-    actionHints: ActionHint[];
+  surface: HostAdapterSurfaceConfig;
+  runtimeDefaults: RuntimeDefaults;
+  build(input: {
+    hostState: THostState;
+    message?: string;
+  }): {
+    embedConfig: EmbedConfig;
+    companionProfile: CompanionProfile;
+    contextPacket: ContextPacket;
+    actionHints: IntegrationActionHint[];
+    warnings: ContextPacketWarning[];
   };
 };`;
 
 const SidePanelPreview = () => {
+  const [selectedAdapterId, setSelectedAdapterId] = useState<AdapterId>("master-draft");
+  const preview = useMemo(() => createHostAdapterPreview(selectedAdapterId), [selectedAdapterId]);
+
   return (
     <AppShell>
       <div data-testid="side-panel-preview-page" className="space-y-8">
@@ -78,16 +40,16 @@ const SidePanelPreview = () => {
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="eyebrow">MOD-26 · Side panel contract</p>
+                <p className="eyebrow">MOD-27 · Host adapter contract</p>
                 <span className="rounded-full border border-accent-sage/40 bg-accent-sage/10 px-3 py-1 text-xs font-medium">
-                  Foundation preview
+                  Adapter preview
                 </span>
               </div>
               <h1 className="font-heading text-3xl md:text-5xl font-medium tracking-tight mt-3 max-w-4xl">
-                A reusable companion panel for any host app.
+                One adapter contract for every host app.
               </h1>
               <p className="text-sm md:text-base text-muted-foreground mt-4 max-w-2xl leading-relaxed">
-                This preview proves the generic side-panel surface: host-owned context in, Mod-Mate companion response out, and confirm-first actions only.
+                Host apps translate their own state into a Mod-Mate context packet, companion profile, embed config, and confirm-first action hints.
               </p>
               <Link
                 to="/integrations"
@@ -102,7 +64,7 @@ const SidePanelPreview = () => {
                   <PanelRight className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-heading text-lg font-medium">Preview only</p>
+                  <p className="font-heading text-lg font-medium">Contract only</p>
                   <p className="text-xs text-muted-foreground mt-0.5">No SDK, auth, install script, or external writes yet.</p>
                 </div>
               </div>
@@ -113,9 +75,46 @@ const SidePanelPreview = () => {
         <div className="grid grid-cols-1 xl:grid-cols-[1fr,420px] gap-6 items-start">
           <div className="space-y-6">
             <SectionCard
+              eyebrow="Adapter samples"
+              title="Choose a host app shape"
+              description="These samples use the same adapter contract while keeping product-specific state inside the host app."
+              testId="side-panel-adapter-picker"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {hostAppAdapters.map((adapter) => (
+                  <button
+                    key={adapter.id}
+                    type="button"
+                    onClick={() => setSelectedAdapterId(adapter.id as AdapterId)}
+                    className={`rounded-2xl border p-5 text-left transition-all hover:-translate-y-0.5 ${
+                      selectedAdapterId === adapter.id
+                        ? "border-primary bg-primary/10 shadow-soft"
+                        : "border-border bg-muted/35 hover:bg-muted/60"
+                    }`}
+                    data-testid={`adapter-${adapter.id}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="eyebrow">{adapter.hostApp.name}</p>
+                        <h3 className="font-heading text-xl font-medium mt-2">{adapter.name}</h3>
+                      </div>
+                      <span className="rounded-full border border-border bg-white px-2.5 py-1 text-[11px] font-medium dark:bg-card">
+                        {adapter.surface.preferredSurface}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{adapter.description}</p>
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      Companion: <span className="text-foreground">{adapter.companionProfileId}</span>
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </SectionCard>
+
+            <SectionCard
               eyebrow="Contract shape"
-              title="What the host app sends"
-              description="The side panel does not scrape silently. The host app chooses the current view, safe context sections, warnings, and action hints."
+              title="What each adapter builds"
+              description="The adapter is the boundary between a host app's private state and the reusable Mod-Mate companion surface."
               testId="side-panel-contract"
             >
               <div className="rounded-2xl bg-primary text-primary-foreground p-5 overflow-auto">
@@ -126,7 +125,7 @@ const SidePanelPreview = () => {
             <SectionCard
               eyebrow="Ownership boundaries"
               title="Keep the split clean"
-              description="This is the line that keeps Master Draft, QAtalyst, extensions, and future apps from turning into one-off spaghetti."
+              description="This line keeps Master Draft, QAtalyst, extensions, and future apps from turning into one-off spaghetti."
               testId="side-panel-boundaries"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -149,21 +148,15 @@ const SidePanelPreview = () => {
             </SectionCard>
           </div>
 
-          <ModMateSidePanel
-            companion={{
-              name: "Workflow Companion",
-              category: "Generic host app assistant",
-              status: "Preview",
-            }}
-            hostApp={{
-              name: "Example Host App",
-              surface: "side-panel",
-              activeView: "Selected workflow section",
-            }}
-            contextSections={contextSections}
-            messages={messages}
-            actionHints={actionHints}
-          />
+          {preview && (
+            <ModMateSidePanel
+              companion={preview.companion}
+              hostApp={preview.hostApp}
+              contextSections={preview.contextSections}
+              messages={preview.messages}
+              actionHints={preview.actionHints}
+            />
+          )}
         </div>
       </div>
     </AppShell>
@@ -176,7 +169,7 @@ const BoundaryCard = ({ icon, title, body }: { icon: React.ReactNode; title: str
     <h3 className="font-heading text-lg font-medium mt-4">{title}</h3>
     <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{body}</p>
     <div className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <CheckCircle2 className="h-3.5 w-3.5 text-accent-sage" /> MOD-26 scope
+      <CheckCircle2 className="h-3.5 w-3.5 text-accent-sage" /> MOD-27 scope
     </div>
   </article>
 );
