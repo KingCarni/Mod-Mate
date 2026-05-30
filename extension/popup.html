@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ask Mod-Mate</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="header">
+        <div class="mark">M</div>
+        <div>
+          <h1>Ask Mod-Mate</h1>
+          <p>Selected-text companion bridge</p>
+        </div>
+      </header>
+
+      <section class="notice" id="status">Highlight text on the page, then open this popup.</section>
+
+      <section class="card">
+        <label for="baseUrl">Mod-Mate URL</label>
+        <div class="row">
+          <input id="baseUrl" type="url" value="http://localhost:3000" />
+          <button id="saveUrl" type="button">Save</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">Page context</div>
+        <p class="meta" id="pageTitle">No page loaded yet.</p>
+        <p class="meta subtle" id="pageUrl"></p>
+      </section>
+
+      <section class="card">
+        <div class="section-title">Selected text</div>
+        <textarea id="selectedText" readonly placeholder="No selected text captured yet."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="section-title">Prompt draft</div>
+        <textarea id="promptDraft">Review the selected text and flag the most important risks, missing context, and next steps.</textarea>
+      </section>
+
+      <div class="actions">
+        <button id="refreshContext" type="button" class="secondary">Refresh selection</button>
+        <button id="copyContext" type="button" class="secondary">Copy context</button>
+        <button id="openPreview" type="button" class="primary">Open side panel preview</button>
+      </div>
+
+      <footer>
+        Explicit selection only. No silent scraping. No page writes.
+      </footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
