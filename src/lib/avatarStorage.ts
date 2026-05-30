@@ -73,7 +73,7 @@ export const buildAvatarUrl = (seed: string): string => {
     <text x="256" y="404" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="${palette.fg}" opacity="0.62">${safeSeed}</text>
   </svg>`;
 
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}#${Date.now()}`;
 };
 
 export const loadAvatar = (): StoredAvatar | null => {
