@@ -29,6 +29,7 @@ export const companionResponseStyles = [
 
 export const companionStatuses = ["Draft", "Ready", "Template", "Published"] as const;
 export const companionAccents = ["primary", "sage", "ochre", "terracotta"] as const;
+export const companionAvatarSources = ["default", "uploaded", "generated"] as const;
 
 export type CompanionProfileSchemaVersion = typeof COMPANION_PROFILE_SCHEMA_VERSION;
 export type CompanionCategory = (typeof companionCategories)[number];
@@ -36,6 +37,14 @@ export type CompanionTone = (typeof companionTones)[number];
 export type CompanionResponseStyle = (typeof companionResponseStyles)[number];
 export type CompanionStatus = (typeof companionStatuses)[number];
 export type CompanionAccent = (typeof companionAccents)[number];
+export type CompanionAvatarSource = (typeof companionAvatarSources)[number];
+
+export type CompanionAvatar = {
+  imageUrl?: string;
+  prompt?: string;
+  source?: CompanionAvatarSource;
+  generatedAt?: string;
+};
 
 export type CompanionPersona = {
   role: string;
@@ -71,6 +80,7 @@ export type CompanionProfile = {
   description: string;
   category: CompanionCategory;
   status: CompanionStatus;
+  avatar?: CompanionAvatar;
   persona: CompanionPersona;
   systemRules: string[];
   memoryCategories: CompanionMemoryCategory[];
@@ -89,6 +99,7 @@ export type CompanionCardSummary = {
   accent: CompanionAccent;
   initials: string;
   lastEdited: string;
+  avatar?: CompanionAvatar;
 };
 
 export type CompanionProfileValidationResult =
