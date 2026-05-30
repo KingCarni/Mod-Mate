@@ -1,3 +1,4 @@
+import type { CompanionProfile } from "@/types/companionProfile";
 import type { CompanionRuntimeMode, CompanionRuntimeProvider } from "@/types/companionRuntime";
 import type {
   ContextPacket,
@@ -81,6 +82,82 @@ export type HostContextAdapterResult = {
   contextPacket: ContextPacket;
   actionHints: IntegrationActionHint[];
   warnings: ContextPacketWarning[];
+};
+
+export type HostAdapterRuntimeDefaults = {
+  mode: CompanionRuntimeMode;
+  provider: CompanionRuntimeProvider;
+};
+
+export type HostAdapterSurfaceConfig = {
+  preferredSurface: EmbedSurface;
+  supportedSurfaces: EmbedSurface[];
+  allowHostActions: boolean;
+  allowedActionKinds: IntegrationActionKind[];
+  theme?: EmbedThemeConfig;
+};
+
+export type HostAdapterSampleMessage = {
+  id: string;
+  label: string;
+  message: string;
+};
+
+export type HostAdapterBuildInput<THostState = unknown> = {
+  hostState: THostState;
+  message?: string;
+  now?: string;
+  runtime?: Partial<HostAdapterRuntimeDefaults>;
+};
+
+export type HostAdapterBuildResult = HostContextAdapterResult & {
+  embedConfig: EmbedConfig;
+  companionProfile: CompanionProfile;
+  companionProfileId: string;
+  runtimeDefaults: HostAdapterRuntimeDefaults;
+  sampleMessage: string;
+};
+
+export type HostAppAdapter<THostState = unknown> = {
+  id: HostAppId | string;
+  name: string;
+  description: string;
+  hostApp: HostAppIdentity;
+  companionProfileId: string;
+  surface: HostAdapterSurfaceConfig;
+  runtimeDefaults: HostAdapterRuntimeDefaults;
+  sampleMessages: HostAdapterSampleMessage[];
+  build: (input: HostAdapterBuildInput<THostState>) => HostAdapterBuildResult;
+};
+
+export type SidePanelAdapterPreview = {
+  companion: {
+    name: string;
+    category: string;
+    status?: string;
+    avatar?: CompanionProfile["avatar"];
+  };
+  hostApp: {
+    name: string;
+    surface: string;
+    activeView: string;
+  };
+  contextSections: Array<{
+    id: string;
+    label: string;
+    detail: string;
+  }>;
+  messages: Array<{
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+  }>;
+  actionHints: Array<{
+    id: string;
+    label: string;
+    description: string;
+    requiresConfirmation?: boolean;
+  }>;
 };
 
 export type IntegrationWarningInput = {
