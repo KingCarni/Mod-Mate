@@ -1,9 +1,44 @@
 const MESSAGE_GET_SELECTED_CONTEXT = "MOD_MATE_GET_SELECTED_CONTEXT";
 
+const companionTemplates = [
+  {
+    id: "general-review",
+    label: "General Review Companion",
+    description: "Balanced review for risks, missing context, and next steps.",
+    prompt: "Review the selected text and flag the most important risks, missing context, and next steps.",
+  },
+  {
+    id: "writing-story",
+    label: "Writing / Story Companion",
+    description: "Story, tone, continuity, scene clarity, and character motivation.",
+    prompt: "Review the selected writing for tone, continuity, character motivation, unclear setup/payoff, and useful revision notes.",
+  },
+  {
+    id: "qa-triage",
+    label: "QA Triage Companion",
+    description: "Bug reports, repro gaps, risk, coverage, and release-readiness notes.",
+    prompt: "Review the selected QA/workflow text. Separate confirmed facts, assumptions, risks, missing repro details, and recommended test coverage.",
+  },
+  {
+    id: "docs-support",
+    label: "Docs / Support Companion",
+    description: "Documentation clarity, support answers, setup gaps, and user blockers.",
+    prompt: "Review the selected documentation or support text. Flag unclear steps, missing prerequisites, likely user confusion, and a clearer answer.",
+  },
+  {
+    id: "product-feedback",
+    label: "Product Feedback Companion",
+    description: "UX friction, product risks, customer impact, and next experiments.",
+    prompt: "Review the selected product feedback. Identify user pain, likely root causes, product risk, and the next practical follow-up.",
+  },
+];
+
 const elements = {
   status: document.getElementById("status"),
   baseUrl: document.getElementById("baseUrl"),
   saveUrl: document.getElementById("saveUrl"),
+  companionTemplate: document.getElementById("companionTemplate"),
+  templateDescription: document.getElementById("templateDescription"),
   pageTitle: document.getElementById("pageTitle"),
   pageUrl: document.getElementById("pageUrl"),
   selectedText: document.getElementById("selectedText"),
@@ -14,6 +49,7 @@ const elements = {
 };
 
 let currentContext = null;
+let currentTemplate = companionTemplates[0];
 
 const setStatus = (message, type = "") => {
   elements.status.textContent = message;
@@ -25,22 +61,40 @@ const getActiveTab = async () => {
   return tabs[0] || null;
 };
 
+const renderTemplateOptions = () => {
+  elements.companionTemplate.innerHTML = companionTemplates
+    .map((template) => `<option value="${template.id}">${template.label}</option>`)
+    .join("");
+};
+
+const applyTemplate = (templateId, options = { updatePrompt: true }) => {
+  currentTemplate = companionTemplates.find((template) => template.id === templateId) || companionTemplates[0];
+  elements.companionTemplate.value = currentTemplate.id;
+  elements.templateDescription.textContent = currentTemplate.description;
+  if (options.updatePrompt) elements.promptDraft.value = currentTemplate.prompt;
+};
+
 const loadSettings = async () => {
-  const stored = await chrome.storage.local.get(["modMateBaseUrl"]);
+  renderTemplateOptions();
+  const stored = await chrome.storage.local.get(["modMateBaseUrl", "modMateCompanionTemplate"]);
   elements.baseUrl.value = stored.modMateBaseUrl || "http://localhost:3000";
+  applyTemplate(stored.modMateCompanionTemplate || "general-review", { updatePrompt: true });
 };
 
 const saveSettings = async () => {
   const value = elements.baseUrl.value.trim() || "http://localhost:3000";
-  await chrome.storage.local.set({ modMateBaseUrl: value.replace(/\/$/, "") });
+  await chrome.storage.local.set({
+    modMateBaseUrl: value.replace(/\/$/, ""),
+    modMateCompanionTemplate: currentTemplate.id,
+  });
   elements.baseUrl.value = value.replace(/\/$/, "");
-  setStatus("Saved Mod-Mate URL.", "success");
+  setStatus("Saved extension options.", "success");
 };
 
 const renderContext = (context) => {
   currentContext = context;
   elements.pageTitle.textContent = context.title || "Untitled page";
-  elements.pageUrl.textContent = context.url || "";
+  elements.pageUrl.textContent = context.topUrl || context.url || "";
   elements.selectedText.value = context.selectedText || "";
 
   if (context.selectedText) {
@@ -60,9 +114,22 @@ const requestSelectedContext = async () => {
   }
 
   try {
-    const response = await chrome.tabs.sendMessage(tab.id, { type: MESSAGE_GET_SELECTED_CONTEXT });
-    if (!response?.ok) throw new Error("No content-script response.");
-    renderContext(response.context);
+    const frames = await chrome.webNavigation?.getAllFrames?.({ tabId: tab.id });
+    const frameIds = Array.isArray(frames) ? frames.map((frame) => frame.frameId) : [0];
+    const responses = await Promise.allSettled(
+      frameIds.map((frameId) => chrome.tabs.sendMessage(tab.id, { type: MESSAGE_GET_SELECTED_CONTEXT }, { frameId })),
+    );
+    const successful = responses
+      .filter((result) => result.status === "fulfilled" && result.value?.ok)
+      .map((result) => result.value.context)
+      .filter(Boolean);
+    const selected = successful.find((context) => context.selectedText) || successful[0];
+    if (!selected) throw new Error("No content-script response.");
+    renderContext({
+      ...selected,
+      title: selected.title || tab.title || "Untitled page",
+      url: selected.topUrl || selected.url || tab.url || "",
+    });
   } catch (error) {
     setStatus("Could not read the selection on this page. Try refreshing the tab, then open the popup again.", "error");
     currentContext = {
@@ -77,10 +144,16 @@ const requestSelectedContext = async () => {
 const buildContextPayload = () => ({
   source: "mod-mate-browser-extension-mvp",
   capturedAt: new Date().toISOString(),
+  companionTemplate: {
+    id: currentTemplate.id,
+    label: currentTemplate.label,
+    description: currentTemplate.description,
+  },
   page: {
     title: currentContext?.title || "Untitled page",
-    url: currentContext?.url || "",
+    url: currentContext?.topUrl || currentContext?.url || "",
     host: currentContext?.host || "",
+    frameUrl: currentContext?.frameUrl || "",
   },
   selectedText: elements.selectedText.value.trim(),
   prompt: elements.promptDraft.value.trim(),
@@ -94,17 +167,29 @@ const buildContextPayload = () => ({
 const copyContext = async () => {
   const payload = buildContextPayload();
   await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-  setStatus("Copied selected-text context JSON.", "success");
+  setStatus(`Copied context for ${currentTemplate.label}.`, "success");
 };
 
 const openSidePanelPreview = async () => {
   const baseUrl = (elements.baseUrl.value.trim() || "http://localhost:3000").replace(/\/$/, "");
-  await chrome.storage.local.set({ modMateBaseUrl: baseUrl });
-  const url = `${baseUrl}/integrations/side-panel-preview?source=extension`;
+  await chrome.storage.local.set({
+    modMateBaseUrl: baseUrl,
+    modMateCompanionTemplate: currentTemplate.id,
+  });
+  const params = new URLSearchParams({
+    source: "extension",
+    template: currentTemplate.id,
+  });
+  const url = `${baseUrl}/integrations/side-panel-preview?${params.toString()}`;
   await chrome.tabs.create({ url });
 };
 
 elements.saveUrl.addEventListener("click", saveSettings);
+elements.companionTemplate.addEventListener("change", async (event) => {
+  applyTemplate(event.target.value, { updatePrompt: true });
+  await chrome.storage.local.set({ modMateCompanionTemplate: currentTemplate.id });
+  setStatus(`Using ${currentTemplate.label}.`, "success");
+});
 elements.refreshContext.addEventListener("click", requestSelectedContext);
 elements.copyContext.addEventListener("click", copyContext);
 elements.openPreview.addEventListener("click", openSidePanelPreview);
