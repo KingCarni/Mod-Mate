@@ -50,9 +50,17 @@
 
       <div class="actions">
         <button id="refreshContext" type="button" class="secondary">Refresh selection</button>
+        <button id="askCompanion" type="button" class="primary">Ask companion</button>
         <button id="copyContext" type="button" class="secondary">Copy context</button>
-        <button id="openPreview" type="button" class="primary">Open side panel preview</button>
+        <button id="copyAnswer" type="button" class="secondary">Copy answer</button>
+        <button id="openPreview" type="button" class="secondary">Open side panel preview</button>
       </div>
+
+      <section class="card answer-card" id="answerCard" hidden>
+        <div class="section-title">Companion answer</div>
+        <div class="answer-meta" id="answerMeta"></div>
+        <pre id="answerOutput"></pre>
+      </section>
 
       <footer>
         Explicit selection only. No silent scraping. No page writes.
