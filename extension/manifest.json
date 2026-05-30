@@ -7,7 +7,7 @@
     "default_popup": "popup.html",
     "default_title": "Ask Mod-Mate"
   },
-  "permissions": ["activeTab", "scripting", "tabs", "storage"],
+  "permissions": ["activeTab", "scripting", "tabs", "storage", "webNavigation"],
   "host_permissions": ["http://localhost:3000/*"],
   "background": {
     "service_worker": "background.js"
