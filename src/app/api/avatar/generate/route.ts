@@ -87,6 +87,12 @@ const createPrompt = ({ prompt, companionName = "Mod-Mate", companionCategory = 
     `Avatar request: ${prompt}.`,
   ].join("\n");
 
+const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+};
+
 const generateWithOpenAI = async (avatarRequest: AvatarRequest): Promise<Uint8Array | null> => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -155,7 +161,7 @@ export async function GET(request: Request) {
     const image = await generateWithOpenAI(normalized);
     if (!image) return createMockImageResponse(normalized);
 
-    return new Response(image, {
+    return new Response(toArrayBuffer(image), {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "no-store",
