@@ -87,7 +87,7 @@ const createPrompt = ({ prompt, companionName = "Mod-Mate", companionCategory = 
     `Avatar request: ${prompt}.`,
   ].join("\n");
 
-const generateWithOpenAI = async (avatarRequest: AvatarRequest): Promise<Buffer | null> => {
+const generateWithOpenAI = async (avatarRequest: AvatarRequest): Promise<Uint8Array | null> => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
@@ -115,12 +115,12 @@ const generateWithOpenAI = async (avatarRequest: AvatarRequest): Promise<Buffer 
   }
 
   const first = payload.data?.[0];
-  if (first?.b64_json) return Buffer.from(first.b64_json, "base64");
+  if (first?.b64_json) return Uint8Array.from(Buffer.from(first.b64_json, "base64"));
 
   if (first?.url) {
     const imageResponse = await fetch(first.url);
     if (!imageResponse.ok) throw new Error("OpenAI returned an image URL that could not be fetched.");
-    return Buffer.from(await imageResponse.arrayBuffer());
+    return new Uint8Array(await imageResponse.arrayBuffer());
   }
 
   throw new Error("OpenAI returned no image data.");
@@ -188,8 +188,10 @@ export async function POST(request: Request) {
       });
     }
 
+    const base64Image = Buffer.from(image).toString("base64");
+
     return NextResponse.json({
-      imageUrl: `data:image/png;base64,${image.toString("base64")}`,
+      imageUrl: `data:image/png;base64,${base64Image}`,
       provider: "openai",
       revisedPrompt: createPrompt(normalized),
     });
