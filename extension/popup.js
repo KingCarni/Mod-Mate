@@ -44,12 +44,18 @@ const elements = {
   selectedText: document.getElementById("selectedText"),
   promptDraft: document.getElementById("promptDraft"),
   refreshContext: document.getElementById("refreshContext"),
+  askCompanion: document.getElementById("askCompanion"),
   copyContext: document.getElementById("copyContext"),
+  copyAnswer: document.getElementById("copyAnswer"),
   openPreview: document.getElementById("openPreview"),
+  answerCard: document.getElementById("answerCard"),
+  answerMeta: document.getElementById("answerMeta"),
+  answerOutput: document.getElementById("answerOutput"),
 };
 
 let currentContext = null;
 let currentTemplate = companionTemplates[0];
+let currentAnswer = "";
 
 const setStatus = (message, type = "") => {
   elements.status.textContent = message;
@@ -101,10 +107,20 @@ const renderContext = (context) => {
     const source = context.captureMethod === "context-menu" ? " from right-click menu" : context.captureMethod === "direct-injection" ? " from page capture" : "";
     setStatus(`Selected text captured${source}. No page data was sent automatically.`, "success");
     elements.copyContext.disabled = false;
+    elements.askCompanion.disabled = false;
   } else {
     setStatus("No selected text found. Try clicking Refresh selection, or right-click selected text and choose Send selection to Mod-Mate.", "error");
     elements.copyContext.disabled = true;
+    elements.askCompanion.disabled = true;
   }
+};
+
+const renderAnswer = (payload) => {
+  currentAnswer = payload.answer || "";
+  elements.answerCard.hidden = false;
+  elements.answerMeta.textContent = `Provider: ${payload.provider || "unknown"} · ${currentTemplate.label}`;
+  elements.answerOutput.textContent = currentAnswer;
+  elements.copyAnswer.disabled = !currentAnswer;
 };
 
 const loadContextMenuSelection = async () => {
@@ -252,6 +268,45 @@ const copyContext = async () => {
   setStatus(`Copied context for ${currentTemplate.label}.`, "success");
 };
 
+const askCompanion = async () => {
+  const selectedText = elements.selectedText.value.trim();
+  if (!selectedText) {
+    setStatus("Select text before asking the companion.", "error");
+    return;
+  }
+
+  const baseUrl = (elements.baseUrl.value.trim() || "http://localhost:3000").replace(/\/$/, "");
+  const payload = buildContextPayload();
+
+  elements.askCompanion.disabled = true;
+  setStatus(`Asking ${currentTemplate.label}...`, "success");
+
+  try {
+    const response = await fetch(`${baseUrl}/api/extension/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Companion request failed.");
+    renderAnswer(data);
+    setStatus(`Answer ready from ${data.provider || "companion"}.`, "success");
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : "Companion request failed.", "error");
+  } finally {
+    elements.askCompanion.disabled = false;
+  }
+};
+
+const copyAnswer = async () => {
+  if (!currentAnswer) {
+    setStatus("No companion answer to copy yet.", "error");
+    return;
+  }
+  await navigator.clipboard.writeText(currentAnswer);
+  setStatus("Copied companion answer.", "success");
+};
+
 const openSidePanelPreview = async () => {
   const baseUrl = (elements.baseUrl.value.trim() || "http://localhost:3000").replace(/\/$/, "");
   await chrome.storage.local.set({
@@ -273,10 +328,14 @@ elements.companionTemplate.addEventListener("change", async (event) => {
   setStatus(`Using ${currentTemplate.label}.`, "success");
 });
 elements.refreshContext.addEventListener("click", requestSelectedContext);
+elements.askCompanion.addEventListener("click", askCompanion);
 elements.copyContext.addEventListener("click", copyContext);
+elements.copyAnswer.addEventListener("click", copyAnswer);
 elements.openPreview.addEventListener("click", openSidePanelPreview);
 
 elements.copyContext.disabled = true;
+elements.copyAnswer.disabled = true;
+elements.askCompanion.disabled = true;
 
 loadSettings().then(requestSelectedContext).catch(() => {
   setStatus("Extension popup failed to initialize.", "error");
