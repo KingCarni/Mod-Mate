@@ -98,12 +98,20 @@ const renderContext = (context) => {
   elements.selectedText.value = context.selectedText || "";
 
   if (context.selectedText) {
-    setStatus("Selected text captured. No page data was sent automatically.", "success");
+    const source = context.captureMethod === "context-menu" ? " from right-click menu" : "";
+    setStatus(`Selected text captured${source}. No page data was sent automatically.`, "success");
     elements.copyContext.disabled = false;
   } else {
-    setStatus("No selected text found. Highlight text on the page and refresh.", "error");
+    setStatus("No selected text found. Try right-clicking selected text and choosing Send selection to Mod-Mate.", "error");
     elements.copyContext.disabled = true;
   }
+};
+
+const loadContextMenuSelection = async () => {
+  const stored = await chrome.storage.local.get(["modMateContextMenuSelection"]);
+  const selection = stored.modMateContextMenuSelection;
+  if (selection?.selectedText) return selection;
+  return null;
 };
 
 const requestSelectedContext = async () => {
@@ -124,6 +132,21 @@ const requestSelectedContext = async () => {
       .map((result) => result.value.context)
       .filter(Boolean);
     const selected = successful.find((context) => context.selectedText) || successful[0];
+    if (selected?.selectedText) {
+      renderContext({
+        ...selected,
+        title: selected.title || tab.title || "Untitled page",
+        url: selected.topUrl || selected.url || tab.url || "",
+      });
+      return;
+    }
+
+    const contextMenuSelection = await loadContextMenuSelection();
+    if (contextMenuSelection?.selectedText) {
+      renderContext(contextMenuSelection);
+      return;
+    }
+
     if (!selected) throw new Error("No content-script response.");
     renderContext({
       ...selected,
@@ -131,7 +154,13 @@ const requestSelectedContext = async () => {
       url: selected.topUrl || selected.url || tab.url || "",
     });
   } catch (error) {
-    setStatus("Could not read the selection on this page. Try refreshing the tab, then open the popup again.", "error");
+    const contextMenuSelection = await loadContextMenuSelection();
+    if (contextMenuSelection?.selectedText) {
+      renderContext(contextMenuSelection);
+      return;
+    }
+
+    setStatus("Could not read selection. Try right-clicking selected text and choosing Send selection to Mod-Mate.", "error");
     currentContext = {
       title: tab.title || "Untitled page",
       url: tab.url || "",
@@ -158,7 +187,7 @@ const buildContextPayload = () => ({
   selectedText: elements.selectedText.value.trim(),
   prompt: elements.promptDraft.value.trim(),
   privacy: {
-    captureMode: "explicit-selection-only",
+    captureMode: currentContext?.captureMethod || "explicit-selection-only",
     silentScraping: false,
     writeBack: false,
   },
